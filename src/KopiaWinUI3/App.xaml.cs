@@ -32,7 +32,7 @@ public partial class App : Application
         {
             _window = new MainWindow
             {
-                Title = "Kopia WinUI3"
+                Title = "Rclone WinUI3"
             };
             _window.Activate();
         }
@@ -47,13 +47,10 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
 
-        services.AddSingleton<IKopiaLocator, KopiaLocator>();
-        services.AddSingleton<IKopiaCommandService, KopiaCommandService>();
-        services.AddSingleton<ILocalPortService, LocalPortService>();
-        services.AddSingleton<IKopiaProcessService, KopiaProcessService>();
+        services.AddSingleton<IRcloneLocator, RcloneLocator>();
+        services.AddSingleton<IRcloneCommandService, RcloneCommandService>();
         services.AddSingleton<IFolderPickerService, FolderPickerService>();
         services.AddSingleton<INotificationDialogService, NotificationDialogService>();
-        services.AddSingleton<IVerifiedCopyService, VerifiedCopyService>();
         services.AddSingleton<MainViewModel>();
 
         return services.BuildServiceProvider();

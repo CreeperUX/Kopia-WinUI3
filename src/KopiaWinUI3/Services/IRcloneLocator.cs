@@ -1,8 +1,8 @@
 namespace KopiaWinUI3.Services;
 
-public interface IKopiaLocator
+public interface IRcloneLocator
 {
-    string? FindKopiaExecutable();
+    string? FindRcloneExecutable();
 
     Task<string> GetVersionAsync(CancellationToken cancellationToken = default);
 }

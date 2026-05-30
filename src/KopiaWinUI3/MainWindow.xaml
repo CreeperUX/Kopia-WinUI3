@@ -5,30 +5,23 @@
     <Grid RowDefinitions="Auto,*" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid Padding="20,16" ColumnDefinitions="*,Auto" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
             <StackPanel Spacing="2">
-                <TextBlock Text="Kopia WinUI3" FontSize="22" FontWeight="SemiBold" />
+                <TextBlock Text="Rclone WinUI3" FontSize="22" FontWeight="SemiBold" />
                 <TextBlock Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" Opacity="0.72" />
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button Content="刷新" Command="{x:Bind ViewModel.RefreshCommand}" />
-                <Button Content="仓库状态" Command="{x:Bind ViewModel.CheckRepositoryCommand}" />
-                <Button Content="快照列表" Command="{x:Bind ViewModel.ListSnapshotsCommand}" />
-                <Button Content="策略列表" Command="{x:Bind ViewModel.ListPoliciesCommand}" />
+                <Button Content="校验目标" Command="{x:Bind ViewModel.CheckDestinationCommand}" />
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1" RowDefinitions="*,Auto" ColumnDefinitions="320,*">
+        <Grid Grid.Row="1" ColumnDefinitions="320,*">
             <ScrollViewer BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
                 <StackPanel Padding="20" Spacing="18">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Kopia 本体" FontWeight="SemiBold" />
-                        <TextBlock Text="{x:Bind ViewModel.KopiaVersion, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
-                        <TextBlock Text="{x:Bind ViewModel.KopiaPath, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.62" />
-                    </StackPanel>
-
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="仓库" FontWeight="SemiBold" />
-                        <TextBlock Text="{x:Bind ViewModel.RepositoryStatus, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
+                        <TextBlock Text="Rclone 本体" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind ViewModel.RcloneVersion, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
+                        <TextBlock Text="{x:Bind ViewModel.RclonePath, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.62" />
                     </StackPanel>
 
                     <StackPanel Spacing="4">
@@ -38,13 +31,8 @@
                     </StackPanel>
 
                     <StackPanel Spacing="4">
-                        <TextBlock Text="快照" FontWeight="SemiBold" />
-                        <TextBlock Text="{x:Bind ViewModel.SnapshotSummary, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
-                    </StackPanel>
-
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="策略" FontWeight="SemiBold" />
-                        <TextBlock Text="{x:Bind ViewModel.PolicySummary, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
+                        <TextBlock Text="当前速度" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind ViewModel.TransferSpeedText, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
@@ -52,50 +40,23 @@
             <ScrollViewer Grid.Column="1">
                 <StackPanel Padding="24" Spacing="18">
                     <StackPanel Spacing="6">
-                        <TextBlock Text="备份工作台" FontSize="24" FontWeight="SemiBold" />
-                        <TextBlock Text="左侧设置源路径，右侧设置目的地。下方任务监控会显示运行状态、传输速度、耗时和 Kopia 输出。" Opacity="0.72" TextWrapping="Wrap" />
+                        <TextBlock Text="文件同步工作台" FontSize="24" FontWeight="SemiBold" />
+                        <TextBlock Text="使用 rclone 作为核心执行 copy、sync 和 check。目标可以是本地路径，也可以直接填写 rclone remote，例如 remote:backup/project。" Opacity="0.72" TextWrapping="Wrap" />
                     </StackPanel>
 
                     <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="16">
                         <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
                             <StackPanel Spacing="14">
-                                <TextBlock Text="源路径" FontSize="20" FontWeight="SemiBold" />
-
-                                <StackPanel Spacing="6">
-                                    <TextBlock Text="备份方式" FontWeight="SemiBold" />
-                                    <ComboBox SelectedIndex="{x:Bind ViewModel.BackupModeIndex, Mode=TwoWay}" HorizontalAlignment="Stretch">
-                                        <ComboBoxItem Content="Kopia 加密仓库" />
-                                        <ComboBoxItem Content="校验文件拷贝" />
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Spacing="6">
-                                    <TextBlock Text="备份源路径" FontWeight="SemiBold" />
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                        <TextBox
-                                            PlaceholderText="例如 C:\Users\Creep\Documents"
-                                            Text="{x:Bind ViewModel.BackupSourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <Button
-                                            Grid.Column="1"
-                                            Content="浏览..."
-                                            Command="{x:Bind ViewModel.PickBackupSourcePathCommand}" />
-                                    </Grid>
-                                </StackPanel>
-
-                                <StackPanel Spacing="6">
-                                    <TextBlock Text="任务说明" FontWeight="SemiBold" />
+                                <TextBlock Text="源" FontSize="20" FontWeight="SemiBold" />
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                     <TextBox
-                                        PlaceholderText="例如 工作文档首次备份"
-                                        Text="{x:Bind ViewModel.SnapshotDescription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                        PlaceholderText="例如 D:\素材 或 remote:source"
+                                        Text="{x:Bind ViewModel.SourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                     <Button
-                                        Content="开始备份"
-                                        Command="{x:Bind ViewModel.CreateSnapshotCommand}"
-                                        Style="{StaticResource AccentButtonStyle}" />
-                                    <Button Content="查看快照" Command="{x:Bind ViewModel.ListSnapshotsCommand}" />
-                                </StackPanel>
+                                        Grid.Column="1"
+                                        Content="浏览..."
+                                        Command="{x:Bind ViewModel.PickSourcePathCommand}" />
+                                </Grid>
                             </StackPanel>
                         </Border>
 
@@ -105,217 +66,86 @@
 
                         <Border Grid.Column="2" Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
                             <StackPanel Spacing="14">
-                                <TextBlock Text="目的地" FontSize="20" FontWeight="SemiBold" />
-
-                                <StackPanel Spacing="6">
-                                    <TextBlock Text="目的地类型" FontWeight="SemiBold" />
-                                    <ComboBox SelectedIndex="{x:Bind ViewModel.RepositoryProviderIndex, Mode=TwoWay}" HorizontalAlignment="Stretch">
-                                        <ComboBoxItem Content="本地文件夹" />
-                                        <ComboBoxItem Content="S3 / MinIO" />
-                                        <ComboBoxItem Content="SFTP" />
-                                        <ComboBoxItem Content="WebDAV" />
-                                        <ComboBoxItem Content="Backblaze B2" />
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.FilesystemDestinationVisibility, Mode=OneWay}">
-                                    <TextBlock Text="本地文件夹" FontWeight="SemiBold" />
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                        <TextBox
-                                            PlaceholderText="例如 D:\Backups"
-                                            Text="{x:Bind ViewModel.RepositoryPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <Button
-                                            Grid.Column="1"
-                                            Content="浏览..."
-                                            Command="{x:Bind ViewModel.PickRepositoryPathCommand}" />
-                                    </Grid>
-                                </StackPanel>
-
-                                <Border Padding="12" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" Visibility="{x:Bind ViewModel.VerifiedCopyNoticeVisibility, Mode=OneWay}">
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="校验文件拷贝" FontWeight="SemiBold" />
-                                        <TextBlock Text="文件会以普通目录树复制到本地目标文件夹，并在复制后进行 SHA-256 校验；该模式不创建 Kopia 仓库，也不需要仓库加密密码。" TextWrapping="Wrap" Opacity="0.72" />
-                                    </StackPanel>
-                                </Border>
-
-                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.S3DestinationVisibility, Mode=OneWay}">
-                                    <TextBlock Text="S3 / MinIO" FontWeight="SemiBold" />
-                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
-                                        <TextBox
-                                            Header="Bucket"
-                                            PlaceholderText="例如 my-kopia-backups"
-                                            Text="{x:Bind ViewModel.S3Bucket, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Column="1"
-                                            Header="Endpoint"
-                                            PlaceholderText="例如 s3.amazonaws.com 或 http://127.0.0.1:9000"
-                                            Text="{x:Bind ViewModel.S3Endpoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Row="1"
-                                            Header="Region"
-                                            PlaceholderText="例如 us-east-1"
-                                            Text="{x:Bind ViewModel.S3Region, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Row="1"
-                                            Grid.Column="1"
-                                            Header="Prefix"
-                                            PlaceholderText="例如 kopia/main"
-                                            Text="{x:Bind ViewModel.S3Prefix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Row="2"
-                                            Header="Access Key"
-                                            Text="{x:Bind ViewModel.S3AccessKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Row="2"
-                                            Grid.Column="1"
-                                            Header="Secret Access Key"
-                                            Text="{x:Bind ViewModel.S3SecretAccessKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    </Grid>
-                                </StackPanel>
-
-                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.SftpDestinationVisibility, Mode=OneWay}">
-                                    <TextBlock Text="SFTP" FontWeight="SemiBold" />
-                                    <Grid ColumnDefinitions="*,140" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
-                                        <TextBox
-                                            Header="主机"
-                                            PlaceholderText="例如 backup.example.com"
-                                            Text="{x:Bind ViewModel.SftpHost, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Column="1"
-                                            Header="端口"
-                                            Text="{x:Bind ViewModel.SftpPort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Row="1"
-                                            Header="用户名"
-                                            Text="{x:Bind ViewModel.SftpUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Row="1"
-                                            Grid.Column="1"
-                                            Header="密码"
-                                            Text="{x:Bind ViewModel.SftpPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Row="2"
-                                            Grid.ColumnSpan="2"
-                                            Header="仓库路径"
-                                            PlaceholderText="例如 /srv/kopia/repository"
-                                            Text="{x:Bind ViewModel.SftpPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    </Grid>
-                                </StackPanel>
-
-                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.WebDavDestinationVisibility, Mode=OneWay}">
-                                    <TextBlock Text="WebDAV" FontWeight="SemiBold" />
-                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="10">
-                                        <TextBox
-                                            Grid.ColumnSpan="2"
-                                            Header="URL"
-                                            PlaceholderText="例如 https://dav.example.com/kopia"
-                                            Text="{x:Bind ViewModel.WebDavUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Row="1"
-                                            Header="用户名"
-                                            Text="{x:Bind ViewModel.WebDavUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Row="1"
-                                            Grid.Column="1"
-                                            Header="密码"
-                                            Text="{x:Bind ViewModel.WebDavPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    </Grid>
-                                </StackPanel>
-
-                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.B2DestinationVisibility, Mode=OneWay}">
-                                    <TextBlock Text="Backblaze B2" FontWeight="SemiBold" />
-                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="10">
-                                        <TextBox
-                                            Header="Bucket"
-                                            Text="{x:Bind ViewModel.B2Bucket, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Column="1"
-                                            Header="Prefix"
-                                            PlaceholderText="例如 kopia/main"
-                                            Text="{x:Bind ViewModel.B2Prefix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Row="1"
-                                            Header="Key ID"
-                                            Text="{x:Bind ViewModel.B2KeyId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBox
-                                            Grid.Row="1"
-                                            Grid.Column="1"
-                                            Header="Application Key"
-                                            Text="{x:Bind ViewModel.B2Key, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    </Grid>
-                                </StackPanel>
-
-                                <Border Padding="12" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" Visibility="{x:Bind ViewModel.KopiaRepositorySetupVisibility, Mode=OneWay}">
-                                    <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
-                                        <TextBlock Text="仓库初始化" FontWeight="SemiBold" />
-
-                                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                            <TextBox
-                                                Header="Kopia 加密密码"
-                                                PlaceholderText="创建或重新连接仓库时填写"
-                                                Text="{x:Bind ViewModel.RepositoryPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                            <Button
-                                                Grid.Column="1"
-                                                Content="创建仓库"
-                                                Command="{x:Bind ViewModel.CreateRepositoryCommand}"
-                                                VerticalAlignment="Bottom" />
-                                            <Button
-                                                Grid.Column="2"
-                                                Content="连接仓库"
-                                                Command="{x:Bind ViewModel.ConnectRepositoryCommand}"
-                                                VerticalAlignment="Bottom" />
-                                        </Grid>
-                                    </Grid>
-                                </Border>
+                                <TextBlock Text="目标" FontSize="20" FontWeight="SemiBold" />
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBox
+                                        PlaceholderText="例如 Z:\备份 或 remote:backup"
+                                        Text="{x:Bind ViewModel.DestinationPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Button
+                                        Grid.Column="1"
+                                        Content="浏览..."
+                                        Command="{x:Bind ViewModel.PickDestinationPathCommand}" />
+                                </Grid>
                             </StackPanel>
                         </Border>
                     </Grid>
 
                     <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                        <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
-                            <TextBlock Text="性能参数" FontSize="20" FontWeight="SemiBold" />
+                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="14">
+                            <TextBlock Text="任务设置" FontSize="20" FontWeight="SemiBold" />
 
-                            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,Auto" ColumnSpacing="12">
-                                <TextBox
-                                    Header="Kopia 并行文件数"
-                                    Text="{x:Bind ViewModel.KopiaParallelFiles, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBox
+                            <Grid Grid.Row="1" ColumnDefinitions="220,Auto,Auto,Auto" ColumnSpacing="18">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="操作" FontWeight="SemiBold" />
+                                    <ComboBox SelectedIndex="{x:Bind ViewModel.OperationIndex, Mode=TwoWay}" HorizontalAlignment="Stretch">
+                                        <ComboBoxItem Content="复制 copy" />
+                                        <ComboBoxItem Content="同步 sync" />
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <ToggleSwitch
                                     Grid.Column="1"
-                                    Header="校验拷贝并发文件数"
-                                    Text="{x:Bind ViewModel.VerifiedCopyParallelFiles, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBox
+                                    Header="按校验和比较"
+                                    IsOn="{x:Bind ViewModel.UseChecksum, Mode=TwoWay}"
+                                    VerticalAlignment="Bottom" />
+                                <ToggleSwitch
                                     Grid.Column="2"
-                                    Header="校验拷贝缓冲区 MB"
-                                    Text="{x:Bind ViewModel.VerifiedCopyBufferSizeMb, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    Header="传输后 check"
+                                    IsOn="{x:Bind ViewModel.VerifyAfterTransfer, Mode=TwoWay}"
+                                    VerticalAlignment="Bottom" />
                                 <ToggleSwitch
                                     Grid.Column="3"
-                                    Header="复制后 SHA-256 校验"
-                                    IsOn="{x:Bind ViewModel.VerifiedCopyVerifyAfterCopy, Mode=TwoWay}"
+                                    Header="Dry run 预演"
+                                    IsOn="{x:Bind ViewModel.DryRun, Mode=TwoWay}"
                                     VerticalAlignment="Bottom" />
                             </Grid>
+
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+                                <Button
+                                    Content="开始执行"
+                                    Command="{x:Bind ViewModel.StartTransferCommand}"
+                                    Style="{StaticResource AccentButtonStyle}" />
+                                <Button Content="仅校验" Command="{x:Bind ViewModel.CheckDestinationCommand}" />
+                            </StackPanel>
                         </Grid>
                     </Border>
 
                     <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
                         <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
-                            <TextBlock Text="恢复" FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Text="性能参数" FontSize="20" FontWeight="SemiBold" />
 
-                            <Grid Grid.Row="1" ColumnDefinitions="*,*,Auto" ColumnSpacing="12">
-                                <StackPanel Spacing="6">
-                                    <TextBlock Text="恢复源对象" FontWeight="SemiBold" />
-                                    <TextBox
-                                        PlaceholderText="例如 kxxxx 或 kxxxx/subdir"
-                                        Text="{x:Bind ViewModel.RestoreSource, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="1" Spacing="6">
-                                    <TextBlock Text="恢复目标路径" FontWeight="SemiBold" />
-                                    <TextBox
-                                        PlaceholderText="例如 D:\RestoreOutput"
-                                        Text="{x:Bind ViewModel.RestoreTargetPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-
-                                <Button Grid.Column="2" Content="开始恢复" Command="{x:Bind ViewModel.RestoreSnapshotCommand}" VerticalAlignment="Bottom" />
+                            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*" ColumnSpacing="12">
+                                <TextBox
+                                    Header="transfers"
+                                    Text="{x:Bind ViewModel.Transfers, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Header="checkers"
+                                    Text="{x:Bind ViewModel.Checkers, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox
+                                    Grid.Column="2"
+                                    Header="buffer MB"
+                                    Text="{x:Bind ViewModel.BufferSizeMb, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox
+                                    Grid.Column="3"
+                                    Header="限速"
+                                    PlaceholderText="例如 800M"
+                                    Text="{x:Bind ViewModel.BandwidthLimit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox
+                                    Grid.Column="4"
+                                    Header="额外参数"
+                                    PlaceholderText="例如 --fast-list"
+                                    Text="{x:Bind ViewModel.ExtraArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             </Grid>
                         </Grid>
                     </Border>
@@ -359,7 +189,7 @@
                                 TextWrapping="Wrap"
                                 FontFamily="Cascadia Mono"
                                 FontSize="13"
-                                MinHeight="180"
+                                MinHeight="220"
                                 Padding="14" />
                         </Grid>
                     </Border>

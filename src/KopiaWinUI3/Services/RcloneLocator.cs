@@ -2,11 +2,11 @@ using System.Diagnostics;
 
 namespace KopiaWinUI3.Services;
 
-public sealed class KopiaLocator : IKopiaLocator
+public sealed class RcloneLocator : IRcloneLocator
 {
-    private const string ExecutableName = "kopia.exe";
+    private const string ExecutableName = "rclone.exe";
 
-    public string? FindKopiaExecutable()
+    public string? FindRcloneExecutable()
     {
         foreach (var candidate in GetCandidates())
         {
@@ -21,10 +21,10 @@ public sealed class KopiaLocator : IKopiaLocator
 
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
     {
-        var executable = FindKopiaExecutable();
+        var executable = FindRcloneExecutable();
         if (executable is null)
         {
-            return "未找到 kopia.exe";
+            return "未找到 rclone.exe";
         }
 
         var startInfo = new ProcessStartInfo
@@ -35,28 +35,27 @@ public sealed class KopiaLocator : IKopiaLocator
             UseShellExecute = false,
             CreateNoWindow = true
         };
-        startInfo.ArgumentList.Add("--version");
+        startInfo.ArgumentList.Add("version");
 
         using var process = Process.Start(startInfo);
         if (process is null)
         {
-            return "无法启动 kopia.exe";
+            return "无法启动 rclone.exe";
         }
 
-        var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+        var outputTask = process.StandardOutput.ReadLineAsync(cancellationToken).AsTask();
         var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
 
         await process.WaitForExitAsync(cancellationToken);
 
-        var output = (await outputTask).Trim();
-        var error = (await errorTask).Trim();
-
+        var output = (await outputTask)?.Trim();
         if (!string.IsNullOrWhiteSpace(output))
         {
             return output;
         }
 
-        return string.IsNullOrWhiteSpace(error) ? $"kopia.exe exited with code {process.ExitCode}" : error;
+        var error = (await errorTask).Trim();
+        return string.IsNullOrWhiteSpace(error) ? $"rclone.exe exited with code {process.ExitCode}" : error;
     }
 
     private static IEnumerable<string> GetCandidates()
@@ -69,7 +68,7 @@ public sealed class KopiaLocator : IKopiaLocator
         var current = new DirectoryInfo(baseDirectory);
         while (current is not null)
         {
-            yield return Path.Combine(current.FullName, "third_party", "kopia", ExecutableName);
+            yield return Path.Combine(current.FullName, "third_party", "rclone", ExecutableName);
             current = current.Parent;
         }
 

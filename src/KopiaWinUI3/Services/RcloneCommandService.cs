@@ -2,27 +2,27 @@ using System.Diagnostics;
 
 namespace KopiaWinUI3.Services;
 
-public sealed class KopiaCommandService : IKopiaCommandService
+public sealed class RcloneCommandService : IRcloneCommandService
 {
-    private readonly IKopiaLocator _locator;
+    private readonly IRcloneLocator _locator;
 
-    public KopiaCommandService(IKopiaLocator locator)
+    public RcloneCommandService(IRcloneLocator locator)
     {
         _locator = locator;
     }
 
-    public async Task<KopiaCommandResult> RunAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken = default)
+    public async Task<RcloneCommandResult> RunAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken = default)
     {
         return await RunStreamingAsync(arguments, _ => { }, cancellationToken);
     }
 
-    public async Task<KopiaCommandResult> RunStreamingAsync(
+    public async Task<RcloneCommandResult> RunStreamingAsync(
         IReadOnlyList<string> arguments,
         Action<string> outputReceived,
         CancellationToken cancellationToken = default)
     {
-        var executable = _locator.FindKopiaExecutable()
-            ?? throw new FileNotFoundException("未找到 kopia.exe。请先运行 scripts/Get-Kopia.ps1 下载 Kopia 本体。");
+        var executable = _locator.FindRcloneExecutable()
+            ?? throw new FileNotFoundException("未找到 rclone.exe。请先运行 scripts/Get-Rclone.ps1 下载 rclone 本体。");
 
         var startInfo = new ProcessStartInfo
         {
@@ -32,8 +32,6 @@ public sealed class KopiaCommandService : IKopiaCommandService
             UseShellExecute = false,
             CreateNoWindow = true
         };
-
-        startInfo.ArgumentList.Add("--disable-file-logging");
 
         foreach (var argument in arguments)
         {
@@ -75,11 +73,9 @@ public sealed class KopiaCommandService : IKopiaCommandService
             outputReceived(e.Data);
         };
 
-        process.Start();
-
-        if (process is null)
+        if (!process.Start())
         {
-            throw new InvalidOperationException("无法启动 kopia.exe。");
+            throw new InvalidOperationException("无法启动 rclone.exe。");
         }
 
         process.BeginOutputReadLine();
@@ -88,7 +84,7 @@ public sealed class KopiaCommandService : IKopiaCommandService
         await process.WaitForExitAsync(cancellationToken);
         await Task.WhenAll(outputDone.Task, errorDone.Task);
 
-        return new KopiaCommandResult(
+        return new RcloneCommandResult(
             process.ExitCode,
             string.Join(Environment.NewLine, output),
             string.Join(Environment.NewLine, error));

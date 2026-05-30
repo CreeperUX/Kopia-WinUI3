@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\third_party\kopia\kopia.exe" Link="bin\kopia.exe" Condition="Exists('..\..\third_party\kopia\kopia.exe')">
+    <Content Include="..\..\third_party\rclone\rclone.exe" Link="bin\rclone.exe" Condition="Exists('..\..\third_party\rclone\rclone.exe')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>

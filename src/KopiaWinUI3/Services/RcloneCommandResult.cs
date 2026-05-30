@@ -1,6 +1,6 @@
 namespace KopiaWinUI3.Services;
 
-public sealed record KopiaCommandResult(
+public sealed record RcloneCommandResult(
     int ExitCode,
     string StandardOutput,
     string StandardError)
@@ -15,7 +15,7 @@ public sealed record KopiaCommandResult(
                 Environment.NewLine,
                 new[] { StandardOutput.Trim(), StandardError.Trim() }.Where(static value => !string.IsNullOrWhiteSpace(value)));
 
-            return string.IsNullOrWhiteSpace(text) ? $"kopia exited with code {ExitCode}" : text;
+            return string.IsNullOrWhiteSpace(text) ? $"rclone exited with code {ExitCode}" : text;
         }
     }
 }
