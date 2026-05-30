@@ -8,7 +8,7 @@ This repository starts with a practical MVP:
 
 - Bundle `kopia.exe` with a WinUI 3 desktop app.
 - Start `kopia server start` on a dynamic `127.0.0.1` port.
-- Host Kopia's existing HTML UI in WebView2.
+- Reserve the main content area for Kopia's existing HTML UI. WebView2 is temporarily disabled in the runnable demo because the current lightweight WinUI CLI toolchain exposes a WebView2/WinRT projection conflict that needs a separate compatibility pass.
 - Show local diagnostics: Kopia path, version, server URL, and process logs.
 - Keep the installer path open for a single setup executable that installs both the GUI and Kopia itself.
 
@@ -31,10 +31,14 @@ Visual Studio 2022 is optional. The project uses `Microsoft.Windows.SDK.BuildToo
 Download the Windows Kopia CLI binary into `third_party/kopia`:
 
 ```powershell
-.\scripts\Get-Kopia.ps1 -Version 0.23.0 -Architecture x64
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Get-Kopia.ps1 -Version 0.23.0 -Architecture x64
 ```
 
-The app also searches for `kopia.exe` on `PATH`, but the installer build should use the bundled copy.
+The app also searches for `kopia.exe` on `PATH`, but the installer build should use the bundled copy. After build, the local output should contain:
+
+```text
+src\KopiaWinUI3\bin\Debug\net8.0-windows10.0.22621.0\win-x64\bin\kopia.exe
+```
 
 ## Build
 
