@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KopiaWinUI3.Services;
+using Microsoft.UI.Dispatching;
 
 namespace KopiaWinUI3.ViewModels;
 
@@ -20,6 +21,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IRcloneCommandService _commands;
     private readonly IFolderPickerService _folderPicker;
     private readonly INotificationDialogService _dialogs;
+    private readonly DispatcherQueue _dispatcherQueue;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RefreshCommand))]
@@ -102,6 +104,7 @@ public partial class MainViewModel : ObservableObject
         _commands = commands;
         _folderPicker = folderPicker;
         _dialogs = dialogs;
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     }
 
     public async Task InitializeAsync()
@@ -335,30 +338,36 @@ public partial class MainViewModel : ObservableObject
         while (!cancellationToken.IsCancellationRequested)
         {
             await Task.Delay(500, cancellationToken).ContinueWith(_ => { }, TaskScheduler.Default);
-            var elapsed = stopwatch.Elapsed;
-            ElapsedTimeText = elapsed.TotalHours >= 1
-                ? elapsed.ToString(@"hh\:mm\:ss")
-                : elapsed.ToString(@"mm\:ss");
+            Enqueue(() =>
+            {
+                var elapsed = stopwatch.Elapsed;
+                ElapsedTimeText = elapsed.TotalHours >= 1
+                    ? elapsed.ToString(@"hh\:mm\:ss")
+                    : elapsed.ToString(@"mm\:ss");
+            });
         }
     }
 
     private void EnqueueOutput(string line)
     {
-        AppendOutput(line);
-        TaskProgressText = ExtractStatus(line);
-
-        var speedMatch = SpeedRegex.Match(line);
-        if (speedMatch.Success)
+        Enqueue(() =>
         {
-            TransferSpeedText = $"{speedMatch.Groups["value"].Value} {speedMatch.Groups["unit"].Value}/s";
-        }
+            AppendOutput(line);
+            TaskProgressText = ExtractStatus(line);
 
-        var percentMatch = PercentRegex.Match(line);
-        if (percentMatch.Success && double.TryParse(percentMatch.Groups["percent"].Value, out var percent))
-        {
-            IsProgressIndeterminate = false;
-            ProgressValue = Math.Clamp(percent, 0, 100);
-        }
+            var speedMatch = SpeedRegex.Match(line);
+            if (speedMatch.Success)
+            {
+                TransferSpeedText = $"{speedMatch.Groups["value"].Value} {speedMatch.Groups["unit"].Value}/s";
+            }
+
+            var percentMatch = PercentRegex.Match(line);
+            if (percentMatch.Success && double.TryParse(percentMatch.Groups["percent"].Value, out var percent))
+            {
+                IsProgressIndeterminate = false;
+                ProgressValue = Math.Clamp(percent, 0, 100);
+            }
+        });
     }
 
     private static string ExtractStatus(string line)
@@ -392,6 +401,23 @@ public partial class MainViewModel : ObservableObject
         CommandOutput = string.IsNullOrWhiteSpace(CommandOutput)
             ? message
             : $"{CommandOutput}{Environment.NewLine}{message}";
+
+        const int maxLength = 60000;
+        if (CommandOutput.Length > maxLength)
+        {
+            CommandOutput = CommandOutput[^maxLength..];
+        }
+    }
+
+    private void Enqueue(Action action)
+    {
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            action();
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() => action());
     }
 
     private void ValidateTransferPaths()
