@@ -12,8 +12,8 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button Content="刷新" Command="{x:Bind ViewModel.RefreshCommand}" />
                 <Button Content="仓库状态" Command="{x:Bind ViewModel.CheckRepositoryCommand}" />
-                <Button Content="快照" Command="{x:Bind ViewModel.ListSnapshotsCommand}" />
-                <Button Content="策略" Command="{x:Bind ViewModel.ListPoliciesCommand}" />
+                <Button Content="快照列表" Command="{x:Bind ViewModel.ListSnapshotsCommand}" />
+                <Button Content="策略列表" Command="{x:Bind ViewModel.ListPoliciesCommand}" />
             </StackPanel>
         </Grid>
 
@@ -43,23 +43,107 @@
                 </StackPanel>
             </ScrollViewer>
 
-            <Grid Grid.Column="1" Padding="24" RowDefinitions="Auto,*">
-                <StackPanel Spacing="6">
-                    <TextBlock Text="原生 Kopia 控制台" FontSize="24" FontWeight="SemiBold" />
-                    <TextBlock Text="当前界面不再启动 Kopia Web UI。所有按钮直接调用 kopia.exe，并把结果显示在原生 WinUI3 控件中。" Opacity="0.72" TextWrapping="Wrap" />
-                </StackPanel>
+            <ScrollViewer Grid.Column="1">
+                <StackPanel Padding="24" Spacing="18">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="备份任务" FontSize="24" FontWeight="SemiBold" />
+                        <TextBlock Text="这里是原生 WinUI3 表单。路径、密码和操作按钮都会直接驱动 kopia.exe，不依赖 Web UI。" Opacity="0.72" TextWrapping="Wrap" />
+                    </StackPanel>
 
-                <TextBox
-                    Grid.Row="1"
-                    Margin="0,20,0,0"
-                    Text="{x:Bind ViewModel.CommandOutput, Mode=OneWay}"
-                    AcceptsReturn="True"
-                    IsReadOnly="True"
-                    TextWrapping="Wrap"
-                    FontFamily="Cascadia Mono"
-                    FontSize="13"
-                    Padding="14" />
-            </Grid>
+                    <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+                            <TextBlock Text="1. 设置仓库目的路径" FontSize="18" FontWeight="SemiBold" />
+
+                            <Grid Grid.Row="1" ColumnDefinitions="1.4*,*" ColumnSpacing="12">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="仓库目的路径" FontWeight="SemiBold" />
+                                    <TextBox
+                                        PlaceholderText="例如 D:\KopiaRepository"
+                                        Text="{x:Bind ViewModel.RepositoryPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="仓库密码" FontWeight="SemiBold" />
+                                    <TextBox
+                                        PlaceholderText="用于创建或连接仓库"
+                                        Text="{x:Bind ViewModel.RepositoryPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+                                <Button Content="创建本地仓库" Command="{x:Bind ViewModel.CreateRepositoryCommand}" />
+                                <Button Content="连接已有仓库" Command="{x:Bind ViewModel.ConnectRepositoryCommand}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+                            <TextBlock Text="2. 设置备份源路径" FontSize="18" FontWeight="SemiBold" />
+
+                            <Grid Grid.Row="1" ColumnDefinitions="1.4*,*" ColumnSpacing="12">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="备份源路径" FontWeight="SemiBold" />
+                                    <TextBox
+                                        PlaceholderText="例如 C:\Users\Creep\Documents"
+                                        Text="{x:Bind ViewModel.BackupSourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="快照说明" FontWeight="SemiBold" />
+                                    <TextBox
+                                        PlaceholderText="例如 工作文档首次备份"
+                                        Text="{x:Bind ViewModel.SnapshotDescription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+                                <Button Content="创建快照" Command="{x:Bind ViewModel.CreateSnapshotCommand}" />
+                                <Button Content="查看快照列表" Command="{x:Bind ViewModel.ListSnapshotsCommand}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+                            <TextBlock Text="3. 恢复到目标路径" FontSize="18" FontWeight="SemiBold" />
+
+                            <Grid Grid.Row="1" ColumnDefinitions="1.2*,1.2*" ColumnSpacing="12">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="恢复源对象" FontWeight="SemiBold" />
+                                    <TextBox
+                                        PlaceholderText="例如 kxxxx 或 kxxxx/subdir"
+                                        Text="{x:Bind ViewModel.RestoreSource, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="恢复目标路径" FontWeight="SemiBold" />
+                                    <TextBox
+                                        PlaceholderText="例如 D:\RestoreOutput"
+                                        Text="{x:Bind ViewModel.RestoreTargetPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+                                <Button Content="开始恢复" Command="{x:Bind ViewModel.RestoreSnapshotCommand}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="操作结果" FontSize="18" FontWeight="SemiBold" />
+                        <TextBox
+                            Text="{x:Bind ViewModel.CommandOutput, Mode=OneWay}"
+                            AcceptsReturn="True"
+                            IsReadOnly="True"
+                            TextWrapping="Wrap"
+                            FontFamily="Cascadia Mono"
+                            FontSize="13"
+                            MinHeight="180"
+                            Padding="14" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Window>
