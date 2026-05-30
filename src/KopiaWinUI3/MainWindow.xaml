@@ -17,7 +17,7 @@
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1" ColumnDefinitions="340,*">
+        <Grid Grid.Row="1" RowDefinitions="*,Auto" ColumnDefinitions="320,*">
             <ScrollViewer BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
                 <StackPanel Padding="20" Spacing="18">
                     <StackPanel Spacing="4">
@@ -29,6 +29,12 @@
                     <StackPanel Spacing="4">
                         <TextBlock Text="仓库" FontWeight="SemiBold" />
                         <TextBlock Text="{x:Bind ViewModel.RepositoryStatus, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="最近任务" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind ViewModel.ActiveTaskName, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
+                        <TextBlock Text="{x:Bind ViewModel.TaskProgressText, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.62" />
                     </StackPanel>
 
                     <StackPanel Spacing="4">
@@ -46,42 +52,15 @@
             <ScrollViewer Grid.Column="1">
                 <StackPanel Padding="24" Spacing="18">
                     <StackPanel Spacing="6">
-                        <TextBlock Text="备份任务" FontSize="24" FontWeight="SemiBold" />
-                        <TextBlock Text="这里是原生 WinUI3 表单。路径、密码和操作按钮都会直接驱动 kopia.exe，不依赖 Web UI。" Opacity="0.72" TextWrapping="Wrap" />
+                        <TextBlock Text="备份工作台" FontSize="24" FontWeight="SemiBold" />
+                        <TextBlock Text="左侧设置源路径，右侧设置目的地。下方任务监控会显示运行状态、传输速度、耗时和 Kopia 输出。" Opacity="0.72" TextWrapping="Wrap" />
                     </StackPanel>
 
-                    <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
-                            <TextBlock Text="1. 设置仓库目的路径" FontSize="18" FontWeight="SemiBold" />
+                    <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="16">
+                        <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                            <StackPanel Spacing="14">
+                                <TextBlock Text="源路径" FontSize="20" FontWeight="SemiBold" />
 
-                            <Grid Grid.Row="1" ColumnDefinitions="1.4*,*" ColumnSpacing="12">
-                                <StackPanel Spacing="6">
-                                    <TextBlock Text="仓库目的路径" FontWeight="SemiBold" />
-                                    <TextBox
-                                        PlaceholderText="例如 D:\KopiaRepository"
-                                        Text="{x:Bind ViewModel.RepositoryPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="1" Spacing="6">
-                                    <TextBlock Text="仓库密码" FontWeight="SemiBold" />
-                                    <TextBox
-                                        PlaceholderText="用于创建或连接仓库"
-                                        Text="{x:Bind ViewModel.RepositoryPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-                            </Grid>
-
-                            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
-                                <Button Content="创建本地仓库" Command="{x:Bind ViewModel.CreateRepositoryCommand}" />
-                                <Button Content="连接已有仓库" Command="{x:Bind ViewModel.ConnectRepositoryCommand}" />
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-
-                    <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
-                            <TextBlock Text="2. 设置备份源路径" FontSize="18" FontWeight="SemiBold" />
-
-                            <Grid Grid.Row="1" ColumnDefinitions="1.4*,*" ColumnSpacing="12">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="备份源路径" FontWeight="SemiBold" />
                                     <TextBox
@@ -89,26 +68,55 @@
                                         Text="{x:Bind ViewModel.BackupSourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="1" Spacing="6">
+                                <StackPanel Spacing="6">
                                     <TextBlock Text="快照说明" FontWeight="SemiBold" />
                                     <TextBox
                                         PlaceholderText="例如 工作文档首次备份"
                                         Text="{x:Bind ViewModel.SnapshotDescription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
-                            </Grid>
 
-                            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
-                                <Button Content="创建快照" Command="{x:Bind ViewModel.CreateSnapshotCommand}" />
-                                <Button Content="查看快照列表" Command="{x:Bind ViewModel.ListSnapshotsCommand}" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="创建快照" Command="{x:Bind ViewModel.CreateSnapshotCommand}" />
+                                    <Button Content="查看快照" Command="{x:Bind ViewModel.ListSnapshotsCommand}" />
+                                </StackPanel>
                             </StackPanel>
+                        </Border>
+
+                        <Grid Grid.Column="1" Width="64" VerticalAlignment="Center">
+                            <TextBlock Text="→" FontSize="34" HorizontalAlignment="Center" Opacity="0.72" />
                         </Grid>
-                    </Border>
+
+                        <Border Grid.Column="2" Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                            <StackPanel Spacing="14">
+                                <TextBlock Text="目的地" FontSize="20" FontWeight="SemiBold" />
+
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="仓库目的路径" FontWeight="SemiBold" />
+                                    <TextBox
+                                        PlaceholderText="例如 D:\KopiaRepository"
+                                        Text="{x:Bind ViewModel.RepositoryPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="仓库密码" FontWeight="SemiBold" />
+                                    <TextBox
+                                        PlaceholderText="用于创建或连接仓库"
+                                        Text="{x:Bind ViewModel.RepositoryPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="创建仓库" Command="{x:Bind ViewModel.CreateRepositoryCommand}" />
+                                    <Button Content="连接仓库" Command="{x:Bind ViewModel.ConnectRepositoryCommand}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
 
                     <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
-                            <TextBlock Text="3. 恢复到目标路径" FontSize="18" FontWeight="SemiBold" />
+                        <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
+                            <TextBlock Text="恢复" FontSize="20" FontWeight="SemiBold" />
 
-                            <Grid Grid.Row="1" ColumnDefinitions="1.2*,1.2*" ColumnSpacing="12">
+                            <Grid Grid.Row="1" ColumnDefinitions="*,*,Auto" ColumnSpacing="12">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="恢复源对象" FontWeight="SemiBold" />
                                     <TextBox
@@ -122,26 +130,55 @@
                                         PlaceholderText="例如 D:\RestoreOutput"
                                         Text="{x:Bind ViewModel.RestoreTargetPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
-                            </Grid>
 
-                            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
-                                <Button Content="开始恢复" Command="{x:Bind ViewModel.RestoreSnapshotCommand}" />
-                            </StackPanel>
+                                <Button Grid.Column="2" Content="开始恢复" Command="{x:Bind ViewModel.RestoreSnapshotCommand}" VerticalAlignment="Bottom" />
+                            </Grid>
                         </Grid>
                     </Border>
 
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="操作结果" FontSize="18" FontWeight="SemiBold" />
-                        <TextBox
-                            Text="{x:Bind ViewModel.CommandOutput, Mode=OneWay}"
-                            AcceptsReturn="True"
-                            IsReadOnly="True"
-                            TextWrapping="Wrap"
-                            FontFamily="Cascadia Mono"
-                            FontSize="13"
-                            MinHeight="180"
-                            Padding="14" />
-                    </StackPanel>
+                    <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="18">
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="任务监控" FontSize="20" FontWeight="SemiBold" />
+                                    <TextBlock Text="{x:Bind ViewModel.ActiveTaskName, Mode=OneWay}" Opacity="0.72" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="3">
+                                    <TextBlock Text="速度" Opacity="0.62" />
+                                    <TextBlock Text="{x:Bind ViewModel.TransferSpeedText, Mode=OneWay}" FontWeight="SemiBold" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Spacing="3">
+                                    <TextBlock Text="耗时" Opacity="0.62" />
+                                    <TextBlock Text="{x:Bind ViewModel.ElapsedTimeText, Mode=OneWay}" FontWeight="SemiBold" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" Spacing="3">
+                                    <TextBlock Text="状态" Opacity="0.62" />
+                                    <TextBlock Text="{x:Bind ViewModel.TaskProgressText, Mode=OneWay}" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </Grid>
+
+                            <ProgressBar
+                                Grid.Row="1"
+                                Minimum="0"
+                                Maximum="100"
+                                Value="{x:Bind ViewModel.ProgressValue, Mode=OneWay}"
+                                IsIndeterminate="{x:Bind ViewModel.IsProgressIndeterminate, Mode=OneWay}" />
+
+                            <TextBox
+                                Grid.Row="2"
+                                Text="{x:Bind ViewModel.CommandOutput, Mode=OneWay}"
+                                AcceptsReturn="True"
+                                IsReadOnly="True"
+                                TextWrapping="Wrap"
+                                FontFamily="Cascadia Mono"
+                                FontSize="13"
+                                MinHeight="180"
+                                Padding="14" />
+                        </Grid>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </Grid>

@@ -1,13 +1,21 @@
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KopiaWinUI3.Services;
+using Microsoft.UI.Dispatching;
 
 namespace KopiaWinUI3.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
+    private static readonly Regex SpeedRegex = new(
+        @"(?<value>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)/s",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     private readonly IKopiaLocator _locator;
     private readonly IKopiaCommandService _commands;
+    private readonly DispatcherQueue _dispatcherQueue;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RefreshCommand))]
@@ -59,10 +67,32 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string commandOutput = string.Empty;
 
+    [ObservableProperty]
+    private bool isTaskRunning;
+
+    [ObservableProperty]
+    private bool isProgressIndeterminate;
+
+    [ObservableProperty]
+    private double progressValue;
+
+    [ObservableProperty]
+    private string taskProgressText = "空闲";
+
+    [ObservableProperty]
+    private string transferSpeedText = "--";
+
+    [ObservableProperty]
+    private string elapsedTimeText = "00:00";
+
+    [ObservableProperty]
+    private string activeTaskName = "无任务";
+
     public MainViewModel(IKopiaLocator locator, IKopiaCommandService commands)
     {
         _locator = locator;
         _commands = commands;
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     }
 
     public async Task InitializeAsync()
@@ -73,7 +103,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task RefreshAsync()
     {
-        await RunNativeOperationAsync("刷新状态", async () =>
+        await RunOperationAsync("刷新状态", async () =>
         {
             var executable = _locator.FindKopiaExecutable();
             KopiaPath = executable ?? "未找到 kopia.exe";
@@ -94,13 +124,13 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task CheckRepositoryAsync()
     {
-        await RunNativeOperationAsync("检查仓库", CheckRepositoryCoreAsync);
+        await RunOperationAsync("检查仓库", CheckRepositoryCoreAsync);
     }
 
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task CreateRepositoryAsync()
     {
-        await RunNativeOperationAsync("创建仓库", async () =>
+        await RunOperationAsync("创建仓库", async () =>
         {
             ValidateDirectoryText(RepositoryPath, "仓库目的路径");
             ValidatePassword();
@@ -122,7 +152,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task ConnectRepositoryAsync()
     {
-        await RunNativeOperationAsync("连接仓库", async () =>
+        await RunOperationAsync("连接仓库", async () =>
         {
             ValidateDirectoryText(RepositoryPath, "仓库目的路径");
             ValidatePassword();
@@ -143,11 +173,11 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task CreateSnapshotAsync()
     {
-        await RunNativeOperationAsync("创建快照", async () =>
+        await RunMonitoredOperationAsync("创建快照", async output =>
         {
             ValidateDirectoryText(BackupSourcePath, "备份源路径");
 
-            var args = new List<string> { "snapshot", "create" };
+            var args = new List<string> { "--progress", "snapshot", "create" };
             if (!string.IsNullOrWhiteSpace(SnapshotDescription))
             {
                 args.Add($"--description={SnapshotDescription}");
@@ -155,16 +185,17 @@ public partial class MainViewModel : ObservableObject
 
             args.Add(BackupSourcePath);
 
-            var result = await _commands.RunAsync(args);
+            var result = await _commands.RunStreamingAsync(args, output);
             SnapshotSummary = result.Succeeded ? "快照创建完成" : "创建快照失败";
             CommandOutput = result.DisplayText;
+            StatusText = result.Succeeded ? "快照创建完成" : "创建快照失败";
         });
     }
 
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task ListSnapshotsAsync()
     {
-        await RunNativeOperationAsync("读取快照", async () =>
+        await RunOperationAsync("读取快照", async () =>
         {
             var result = await _commands.RunAsync(["snapshot", "list"]);
             SnapshotSummary = result.Succeeded ? "已加载快照列表" : "当前没有可用仓库";
@@ -175,7 +206,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task ListPoliciesAsync()
     {
-        await RunNativeOperationAsync("读取策略", async () =>
+        await RunOperationAsync("读取策略", async () =>
         {
             var result = await _commands.RunAsync(["policy", "list"]);
             PolicySummary = result.Succeeded ? "已加载策略列表" : "当前没有可用仓库";
@@ -186,16 +217,17 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task RestoreSnapshotAsync()
     {
-        await RunNativeOperationAsync("恢复快照", async () =>
+        await RunMonitoredOperationAsync("恢复快照", async output =>
         {
             ValidateText(RestoreSource, "恢复源对象");
             ValidateText(RestoreTargetPath, "恢复目标路径");
 
-            var result = await _commands.RunAsync([
+            var result = await _commands.RunStreamingAsync([
+                "--progress",
                 "restore",
                 RestoreSource,
                 RestoreTargetPath
-            ]);
+            ], output);
 
             CommandOutput = result.DisplayText;
             StatusText = result.Succeeded ? "恢复完成" : "恢复失败";
@@ -209,7 +241,7 @@ public partial class MainViewModel : ObservableObject
         CommandOutput = result.DisplayText;
     }
 
-    private async Task RunNativeOperationAsync(string operationName, Func<Task> operation)
+    private async Task RunOperationAsync(string operationName, Func<Task> operation)
     {
         if (IsBusy)
         {
@@ -235,6 +267,106 @@ public partial class MainViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    private async Task RunMonitoredOperationAsync(string operationName, Func<Action<string>, Task> operation)
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        using var timerCts = new CancellationTokenSource();
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            IsBusy = true;
+            IsTaskRunning = true;
+            IsProgressIndeterminate = true;
+            ProgressValue = 0;
+            ActiveTaskName = operationName;
+            TaskProgressText = "正在启动";
+            TransferSpeedText = "等待数据";
+            ElapsedTimeText = "00:00";
+            CommandOutput = string.Empty;
+            StatusText = $"{operationName}中...";
+
+            _ = UpdateElapsedTimeAsync(stopwatch, timerCts.Token);
+
+            await operation(line => EnqueueOutput(line));
+
+            IsProgressIndeterminate = false;
+            ProgressValue = 100;
+            TaskProgressText = "完成";
+        }
+        catch (Exception ex)
+        {
+            IsProgressIndeterminate = false;
+            TaskProgressText = "失败";
+            StatusText = "操作失败";
+            AppendOutput(ex.Message);
+        }
+        finally
+        {
+            timerCts.Cancel();
+            IsTaskRunning = false;
+            IsBusy = false;
+            stopwatch.Stop();
+        }
+    }
+
+    private async Task UpdateElapsedTimeAsync(Stopwatch stopwatch, CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            await Task.Delay(500, cancellationToken).ContinueWith(_ => { }, TaskScheduler.Default);
+            Enqueue(() =>
+            {
+                var elapsed = stopwatch.Elapsed;
+                ElapsedTimeText = elapsed.TotalHours >= 1
+                    ? elapsed.ToString(@"hh\:mm\:ss")
+                    : elapsed.ToString(@"mm\:ss");
+            });
+        }
+    }
+
+    private void EnqueueOutput(string line)
+    {
+        Enqueue(() =>
+        {
+            AppendOutput(line);
+            TaskProgressText = "运行中";
+
+            var speedMatch = SpeedRegex.Match(line);
+            if (speedMatch.Success)
+            {
+                TransferSpeedText = $"{speedMatch.Groups["value"].Value} {speedMatch.Groups["unit"].Value}/s";
+            }
+        });
+    }
+
+    private void Enqueue(Action action)
+    {
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            action();
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() => action());
+    }
+
+    private void AppendOutput(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        CommandOutput = string.IsNullOrWhiteSpace(CommandOutput)
+            ? message
+            : $"{CommandOutput}{Environment.NewLine}{message}";
     }
 
     private void ValidateDirectoryText(string value, string label)
