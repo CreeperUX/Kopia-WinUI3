@@ -15,6 +15,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
 
         App.Services.GetRequiredService<IFolderPickerService>().Initialize(this);
+        App.Services.GetRequiredService<INotificationDialogService>().Initialize(this);
         _ = ViewModel.InitializeAsync();
     }
 }

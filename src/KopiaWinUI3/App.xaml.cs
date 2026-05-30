@@ -52,6 +52,7 @@ public partial class App : Application
         services.AddSingleton<ILocalPortService, LocalPortService>();
         services.AddSingleton<IKopiaProcessService, KopiaProcessService>();
         services.AddSingleton<IFolderPickerService, FolderPickerService>();
+        services.AddSingleton<INotificationDialogService, NotificationDialogService>();
         services.AddSingleton<MainViewModel>();
 
         return services.BuildServiceProvider();

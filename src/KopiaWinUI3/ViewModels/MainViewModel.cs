@@ -17,6 +17,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IKopiaLocator _locator;
     private readonly IKopiaCommandService _commands;
     private readonly IFolderPickerService _folderPicker;
+    private readonly INotificationDialogService _dialogs;
     private readonly DispatcherQueue _dispatcherQueue;
 
     [ObservableProperty]
@@ -152,11 +153,13 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel(
         IKopiaLocator locator,
         IKopiaCommandService commands,
-        IFolderPickerService folderPicker)
+        IFolderPickerService folderPicker,
+        INotificationDialogService dialogs)
     {
         _locator = locator;
         _commands = commands;
         _folderPicker = folderPicker;
+        _dialogs = dialogs;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     }
 
@@ -210,7 +213,8 @@ public partial class MainViewModel : ObservableObject
             var result = await _commands.RunAsync(BuildRepositoryArguments("create"));
 
             RepositoryStatus = result.Succeeded ? "已创建并连接仓库" : "创建仓库失败";
-            CommandOutput = result.DisplayText;
+            ThrowIfCommandFailed(result, "创建仓库失败");
+            CommandOutput = "仓库已创建并连接。";
         });
     }
 
@@ -222,7 +226,8 @@ public partial class MainViewModel : ObservableObject
             var result = await _commands.RunAsync(BuildRepositoryArguments("connect"));
 
             RepositoryStatus = result.Succeeded ? "已连接仓库" : "连接仓库失败";
-            CommandOutput = result.DisplayText;
+            ThrowIfCommandFailed(result, "连接仓库失败");
+            CommandOutput = "仓库已连接。";
         });
     }
 
@@ -282,6 +287,7 @@ public partial class MainViewModel : ObservableObject
         {
             var result = await _commands.RunAsync(["snapshot", "list"]);
             SnapshotSummary = result.Succeeded ? "已加载快照列表" : "当前没有可用仓库";
+            ThrowIfCommandFailed(result, "读取快照列表失败");
             CommandOutput = result.DisplayText;
         });
     }
@@ -293,6 +299,7 @@ public partial class MainViewModel : ObservableObject
         {
             var result = await _commands.RunAsync(["policy", "list"]);
             PolicySummary = result.Succeeded ? "已加载策略列表" : "当前没有可用仓库";
+            ThrowIfCommandFailed(result, "读取策略列表失败");
             CommandOutput = result.DisplayText;
         });
     }
@@ -327,6 +334,49 @@ public partial class MainViewModel : ObservableObject
         var result = await _commands.RunAsync(["repository", "status"]);
         RepositoryStatus = result.Succeeded ? "已连接仓库" : "未连接仓库";
         CommandOutput = result.DisplayText;
+    }
+
+    private static void ThrowIfCommandFailed(KopiaCommandResult result, string fallbackMessage)
+    {
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(ToFriendlyError(result.DisplayText, fallbackMessage));
+        }
+    }
+
+    private static string ToFriendlyError(string message, string fallbackMessage = "操作失败")
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return fallbackMessage;
+        }
+
+        if (message.Contains("repository is not connected", StringComparison.OrdinalIgnoreCase))
+        {
+            return "当前没有连接 Kopia 仓库。请先在右侧“仓库初始化”中创建或连接仓库，然后再开始备份。";
+        }
+
+        if (message.Contains("invalid password", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("incorrect password", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("wrong password", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Kopia 加密密码不正确。请确认这是创建该仓库时使用的密码。";
+        }
+
+        if (message.Contains("access is denied", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("permission denied", StringComparison.OrdinalIgnoreCase))
+        {
+            return "没有足够权限访问当前路径或仓库。请确认源路径、目标路径可读写，必要时换到用户目录下的文件夹。";
+        }
+
+        if (message.Contains("no such file or directory", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("cannot find the path", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("The system cannot find", StringComparison.OrdinalIgnoreCase))
+        {
+            return "找不到指定路径。请重新选择源路径或目标路径后再试。";
+        }
+
+        return message.Trim();
     }
 
     private async Task EnsureRepositoryReadyForBackupAsync(Action<string> output)
@@ -491,7 +541,8 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusText = "操作失败";
-            CommandOutput = ex.Message;
+            CommandOutput = "操作失败，错误详情已通过弹窗显示。";
+            await _dialogs.ShowErrorAsync(operationName, ToFriendlyError(ex.Message));
         }
         finally
         {
@@ -535,7 +586,8 @@ public partial class MainViewModel : ObservableObject
             IsProgressIndeterminate = false;
             TaskProgressText = "失败";
             StatusText = "操作失败";
-            AppendOutput(ex.Message);
+            AppendOutput("操作失败，错误详情已通过弹窗显示。");
+            await _dialogs.ShowErrorAsync(operationName, ToFriendlyError(ex.Message));
         }
         finally
         {
