@@ -249,7 +249,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task CreateSnapshotAsync()
     {
-        await RunMonitoredOperationAsync("创建快照", async output =>
+        await RunMonitoredOperationAsync("开始备份", async output =>
         {
             ValidateDirectoryText(BackupSourcePath, "备份源路径");
 
@@ -262,9 +262,9 @@ public partial class MainViewModel : ObservableObject
             args.Add(BackupSourcePath);
 
             var result = await _commands.RunStreamingAsync(args, output);
-            SnapshotSummary = result.Succeeded ? "快照创建完成" : "创建快照失败";
+            SnapshotSummary = result.Succeeded ? "备份完成" : "备份失败";
             CommandOutput = result.DisplayText;
-            StatusText = result.Succeeded ? "快照创建完成" : "创建快照失败";
+            StatusText = result.Succeeded ? "备份完成" : "备份失败";
         });
     }
 

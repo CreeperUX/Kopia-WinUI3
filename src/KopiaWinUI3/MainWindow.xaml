@@ -82,7 +82,10 @@
                                 </StackPanel>
 
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button Content="创建快照" Command="{x:Bind ViewModel.CreateSnapshotCommand}" />
+                                    <Button
+                                        Content="开始备份"
+                                        Command="{x:Bind ViewModel.CreateSnapshotCommand}"
+                                        Style="{StaticResource AccentButtonStyle}" />
                                     <Button Content="查看快照" Command="{x:Bind ViewModel.ListSnapshotsCommand}" />
                                 </StackPanel>
                             </StackPanel>
@@ -105,13 +108,6 @@
                                         <ComboBoxItem Content="WebDAV" />
                                         <ComboBoxItem Content="Backblaze B2" />
                                     </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Spacing="6">
-                                    <TextBlock Text="仓库加密密码" FontWeight="SemiBold" />
-                                    <TextBox
-                                        PlaceholderText="用于创建或连接仓库"
-                                        Text="{x:Bind ViewModel.RepositoryPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
 
                                 <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.FilesystemDestinationVisibility, Mode=OneWay}">
@@ -234,10 +230,28 @@
                                     </Grid>
                                 </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button Content="创建仓库" Command="{x:Bind ViewModel.CreateRepositoryCommand}" />
-                                    <Button Content="连接仓库" Command="{x:Bind ViewModel.ConnectRepositoryCommand}" />
-                                </StackPanel>
+                                <Border Padding="12" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6">
+                                    <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
+                                        <TextBlock Text="仓库初始化" FontWeight="SemiBold" />
+
+                                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                            <TextBox
+                                                Header="Kopia 加密密码"
+                                                PlaceholderText="创建或重新连接仓库时填写"
+                                                Text="{x:Bind ViewModel.RepositoryPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                            <Button
+                                                Grid.Column="1"
+                                                Content="创建仓库"
+                                                Command="{x:Bind ViewModel.CreateRepositoryCommand}"
+                                                VerticalAlignment="Bottom" />
+                                            <Button
+                                                Grid.Column="2"
+                                                Content="连接仓库"
+                                                Command="{x:Bind ViewModel.ConnectRepositoryCommand}"
+                                                VerticalAlignment="Bottom" />
+                                        </Grid>
+                                    </Grid>
+                                </Border>
                             </StackPanel>
                         </Border>
                     </Grid>
