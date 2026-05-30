@@ -4,14 +4,15 @@ namespace KopiaWinUI3.Services;
 
 public sealed class VerifiedCopyService : IVerifiedCopyService
 {
-    private const int BufferSize = 1024 * 1024;
-
     public async Task<VerifiedCopyResult> CopyAsync(
         string sourcePath,
         string destinationRoot,
+        VerifiedCopyOptions options,
         IProgress<VerifiedCopyProgress> progress,
         CancellationToken cancellationToken = default)
     {
+        var parallelism = Math.Clamp(options.Parallelism, 1, 32);
+        var bufferSize = Math.Clamp(options.BufferSizeBytes, 1024 * 1024, 64 * 1024 * 1024);
         var sourceDirectory = new DirectoryInfo(sourcePath);
         if (!sourceDirectory.Exists)
         {
@@ -35,21 +36,43 @@ public sealed class VerifiedCopyService : IVerifiedCopyService
         var copiedBytes = 0L;
         progress.Report(new VerifiedCopyProgress($"发现 {files.Count} 个文件，准备复制。", 0, totalBytes));
 
-        foreach (var file in files)
+        using var gate = new SemaphoreSlim(parallelism);
+        var tasks = files.Select(async file =>
         {
             cancellationToken.ThrowIfCancellationRequested();
+            await gate.WaitAsync(cancellationToken);
+            try
+            {
+                var destinationFile = new FileInfo(file.DestinationPath);
+                destinationFile.Directory?.Create();
 
-            var destinationFile = new FileInfo(file.DestinationPath);
-            destinationFile.Directory?.Create();
+                await CopyFileAsync(file, totalBytes, bufferSize, progress, () => Interlocked.Read(ref copiedBytes), copied =>
+                {
+                    Interlocked.Add(ref copiedBytes, copied);
+                }, cancellationToken);
 
-            await CopyFileAsync(file, copiedBytes, totalBytes, progress, cancellationToken);
-            copiedBytes += file.Length;
+                if (options.VerifyAfterCopy)
+                {
+                    progress.Report(new VerifiedCopyProgress(
+                        $"正在校验 {Path.GetFileName(file.SourcePath)}",
+                        Interlocked.Read(ref copiedBytes),
+                        totalBytes,
+                        file.SourcePath));
+                    await VerifyFileAsync(file.SourcePath, file.DestinationPath, bufferSize, cancellationToken);
+                }
+            }
+            finally
+            {
+                gate.Release();
+            }
+        });
 
-            progress.Report(new VerifiedCopyProgress($"正在校验 {Path.GetFileName(file.SourcePath)}", copiedBytes, totalBytes, file.SourcePath));
-            await VerifyFileAsync(file.SourcePath, file.DestinationPath, cancellationToken);
-        }
+        await Task.WhenAll(tasks);
 
-        progress.Report(new VerifiedCopyProgress($"校验拷贝完成：{destinationDirectory}", totalBytes, totalBytes));
+        var doneMessage = options.VerifyAfterCopy
+            ? $"校验拷贝完成：{destinationDirectory}"
+            : $"文件拷贝完成：{destinationDirectory}";
+        progress.Report(new VerifiedCopyProgress(doneMessage, totalBytes, totalBytes));
         return new VerifiedCopyResult(destinationDirectory, files.Count, totalBytes);
     }
 
@@ -67,15 +90,16 @@ public sealed class VerifiedCopyService : IVerifiedCopyService
 
     private static async Task CopyFileAsync(
         CopyItem item,
-        long copiedBeforeFile,
         long totalBytes,
+        int bufferSize,
         IProgress<VerifiedCopyProgress> progress,
+        Func<long> getCopiedBytes,
+        Action<long> addCopiedBytes,
         CancellationToken cancellationToken)
     {
-        var copiedInFile = 0L;
-        await using var source = new FileStream(item.SourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, true);
-        await using var destination = new FileStream(item.DestinationPath, FileMode.Create, FileAccess.Write, FileShare.None, BufferSize, true);
-        var buffer = new byte[BufferSize];
+        await using var source = new FileStream(item.SourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        await using var destination = new FileStream(item.DestinationPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        var buffer = new byte[bufferSize];
 
         while (true)
         {
@@ -86,19 +110,19 @@ public sealed class VerifiedCopyService : IVerifiedCopyService
             }
 
             await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-            copiedInFile += read;
+            addCopiedBytes(read);
             progress.Report(new VerifiedCopyProgress(
                 $"正在复制 {Path.GetFileName(item.SourcePath)}",
-                copiedBeforeFile + copiedInFile,
+                getCopiedBytes(),
                 totalBytes,
                 item.SourcePath));
         }
     }
 
-    private static async Task VerifyFileAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken)
+    private static async Task VerifyFileAsync(string sourcePath, string destinationPath, int bufferSize, CancellationToken cancellationToken)
     {
-        var sourceHash = await ComputeHashAsync(sourcePath, cancellationToken);
-        var destinationHash = await ComputeHashAsync(destinationPath, cancellationToken);
+        var sourceHash = await ComputeHashAsync(sourcePath, bufferSize, cancellationToken);
+        var destinationHash = await ComputeHashAsync(destinationPath, bufferSize, cancellationToken);
 
         if (!sourceHash.SequenceEqual(destinationHash))
         {
@@ -106,9 +130,9 @@ public sealed class VerifiedCopyService : IVerifiedCopyService
         }
     }
 
-    private static async Task<byte[]> ComputeHashAsync(string path, CancellationToken cancellationToken)
+    private static async Task<byte[]> ComputeHashAsync(string path, int bufferSize, CancellationToken cancellationToken)
     {
-        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, true);
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan);
         return await SHA256.HashDataAsync(stream, cancellationToken);
     }
 

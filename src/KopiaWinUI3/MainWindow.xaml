@@ -273,6 +273,31 @@
 
                     <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
                         <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
+                            <TextBlock Text="性能参数" FontSize="20" FontWeight="SemiBold" />
+
+                            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,Auto" ColumnSpacing="12">
+                                <TextBox
+                                    Header="Kopia 并行文件数"
+                                    Text="{x:Bind ViewModel.KopiaParallelFiles, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Header="校验拷贝并发文件数"
+                                    Text="{x:Bind ViewModel.VerifiedCopyParallelFiles, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox
+                                    Grid.Column="2"
+                                    Header="校验拷贝缓冲区 MB"
+                                    Text="{x:Bind ViewModel.VerifiedCopyBufferSizeMb, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <ToggleSwitch
+                                    Grid.Column="3"
+                                    Header="复制后 SHA-256 校验"
+                                    IsOn="{x:Bind ViewModel.VerifiedCopyVerifyAfterCopy, Mode=TwoWay}"
+                                    VerticalAlignment="Bottom" />
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                        <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
                             <TextBlock Text="恢复" FontSize="20" FontWeight="SemiBold" />
 
                             <Grid Grid.Row="1" ColumnDefinitions="*,*,Auto" ColumnSpacing="12">

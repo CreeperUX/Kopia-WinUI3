@@ -5,6 +5,7 @@ public interface IVerifiedCopyService
     Task<VerifiedCopyResult> CopyAsync(
         string sourcePath,
         string destinationRoot,
+        VerifiedCopyOptions options,
         IProgress<VerifiedCopyProgress> progress,
         CancellationToken cancellationToken = default);
 }

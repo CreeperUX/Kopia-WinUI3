@@ -125,6 +125,18 @@ public partial class MainViewModel : ObservableObject
     private string snapshotDescription = string.Empty;
 
     [ObservableProperty]
+    private string kopiaParallelFiles = "8";
+
+    [ObservableProperty]
+    private string verifiedCopyParallelFiles = "2";
+
+    [ObservableProperty]
+    private string verifiedCopyBufferSizeMb = "8";
+
+    [ObservableProperty]
+    private bool verifiedCopyVerifyAfterCopy = true;
+
+    [ObservableProperty]
     private string restoreSource = string.Empty;
 
     [ObservableProperty]
@@ -276,6 +288,9 @@ public partial class MainViewModel : ObservableObject
             await EnsureRepositoryReadyForBackupAsync(output);
 
             var args = new List<string> { "--progress", "snapshot", "create" };
+            var kopiaParallel = ParsePositiveInt(KopiaParallelFiles, "Kopia 并行文件数", 1, 64);
+            args.Add($"--parallel={kopiaParallel}");
+
             if (!string.IsNullOrWhiteSpace(SnapshotDescription))
             {
                 args.Add($"--description={SnapshotDescription}");
@@ -488,10 +503,16 @@ public partial class MainViewModel : ObservableObject
             }
         });
 
-        var result = await _verifiedCopy.CopyAsync(BackupSourcePath, RepositoryPath, progress);
+        var options = new VerifiedCopyOptions(
+            ParsePositiveInt(VerifiedCopyParallelFiles, "校验拷贝并发文件数", 1, 32),
+            ParsePositiveInt(VerifiedCopyBufferSizeMb, "校验拷贝缓冲区", 1, 64) * 1024 * 1024,
+            VerifiedCopyVerifyAfterCopy);
+
+        var result = await _verifiedCopy.CopyAsync(BackupSourcePath, RepositoryPath, options, progress);
         SnapshotSummary = $"校验拷贝完成：{result.FileCount} 个文件";
         StatusText = "校验拷贝完成";
-        CommandOutput = $"校验拷贝完成。{Environment.NewLine}目标路径：{result.DestinationPath}{Environment.NewLine}文件数量：{result.FileCount}{Environment.NewLine}总大小：{FormatBytes(result.TotalBytes)}";
+        var mode = VerifiedCopyVerifyAfterCopy ? "校验拷贝完成。" : "文件拷贝完成，已跳过 SHA-256 校验。";
+        CommandOutput = $"{mode}{Environment.NewLine}目标路径：{result.DestinationPath}{Environment.NewLine}文件数量：{result.FileCount}{Environment.NewLine}总大小：{FormatBytes(result.TotalBytes)}";
     }
 
     private IReadOnlyList<string> BuildRepositoryArguments(string operation)
@@ -596,6 +617,21 @@ public partial class MainViewModel : ObservableObject
         return unitIndex == 0
             ? $"{bytes} {units[unitIndex]}"
             : $"{value:0.##} {units[unitIndex]}";
+    }
+
+    private static int ParsePositiveInt(string value, string label, int minimum, int maximum)
+    {
+        if (!int.TryParse(value, out var parsed))
+        {
+            throw new InvalidOperationException($"{label}必须是数字。");
+        }
+
+        if (parsed < minimum || parsed > maximum)
+        {
+            throw new InvalidOperationException($"{label}必须在 {minimum} 到 {maximum} 之间。");
+        }
+
+        return parsed;
     }
 
     private async Task RunOperationAsync(string operationName, Func<Task> operation)
