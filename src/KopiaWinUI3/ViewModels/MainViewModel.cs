@@ -1,23 +1,20 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.UI.Dispatching;
 using KopiaWinUI3.Services;
-using Windows.ApplicationModel.DataTransfer;
 
 namespace KopiaWinUI3.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
     private readonly IKopiaLocator _locator;
-    private readonly IKopiaProcessService _processService;
-    private readonly DispatcherQueue _dispatcherQueue;
+    private readonly IKopiaCommandService _commands;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(StartCommand))]
-    [NotifyCanExecuteChangedFor(nameof(StopCommand))]
-    [NotifyCanExecuteChangedFor(nameof(OpenServerCommand))]
-    [NotifyCanExecuteChangedFor(nameof(CopyServerAddressCommand))]
-    private bool isRunning;
+    [NotifyCanExecuteChangedFor(nameof(RefreshCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CheckRepositoryCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ListSnapshotsCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ListPoliciesCommand))]
+    private bool isBusy;
 
     [ObservableProperty]
     private string statusText = "正在初始化...";
@@ -29,135 +26,110 @@ public partial class MainViewModel : ObservableObject
     private string kopiaPath = "未检测";
 
     [ObservableProperty]
-    private string serverUrl = "未启动";
+    private string repositoryStatus = "未检测";
 
     [ObservableProperty]
-    private string processState = "未启动";
+    private string snapshotSummary = "未加载";
 
     [ObservableProperty]
-    private string logText = string.Empty;
+    private string policySummary = "未加载";
 
-    public MainViewModel(IKopiaLocator locator, IKopiaProcessService processService)
+    [ObservableProperty]
+    private string commandOutput = string.Empty;
+
+    public MainViewModel(IKopiaLocator locator, IKopiaCommandService commands)
     {
         _locator = locator;
-        _processService = processService;
-        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-        _processService.LogReceived += OnProcessLogReceived;
+        _commands = commands;
     }
 
-    public event EventHandler<Uri>? ServerStarted;
-
-    [RelayCommand]
     public async Task InitializeAsync()
     {
         await RefreshAsync();
     }
 
-    [RelayCommand(CanExecute = nameof(CanStart))]
-    public async Task StartAsync()
-    {
-        try
-        {
-            StatusText = "正在启动 Kopia...";
-            var uri = await _processService.StartAsync();
-            ServerUrl = uri.ToString();
-            IsRunning = true;
-            ProcessState = "运行中";
-            StatusText = "Kopia UI 已启动";
-            ServerStarted?.Invoke(this, uri);
-        }
-        catch (Exception ex)
-        {
-            IsRunning = false;
-            ProcessState = "启动失败";
-            StatusText = ex.Message;
-            AppendLog(ex.ToString());
-        }
-    }
-
-    [RelayCommand(CanExecute = nameof(CanStop))]
-    public async Task StopAsync()
-    {
-        try
-        {
-            StatusText = "正在停止 Kopia...";
-            await _processService.StopAsync();
-            IsRunning = false;
-            ServerUrl = "未启动";
-            ProcessState = "未启动";
-            StatusText = "Kopia 已停止";
-        }
-        catch (Exception ex)
-        {
-            StatusText = ex.Message;
-            AppendLog(ex.ToString());
-        }
-    }
-
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task RefreshAsync()
     {
-        var executable = _locator.FindKopiaExecutable();
-        KopiaPath = executable ?? "未找到 kopia.exe";
-        KopiaVersion = await _locator.GetVersionAsync();
-
-        IsRunning = _processService.IsRunning;
-        ServerUrl = _processService.ServerUri?.ToString() ?? "未启动";
-        ProcessState = IsRunning ? "运行中" : "未启动";
-        StatusText = executable is null ? "请放置 Kopia 二进制后再启动" : "准备就绪";
-    }
-
-    [RelayCommand(CanExecute = nameof(CanOpenServer))]
-    public async Task OpenServerAsync()
-    {
-        if (_processService.ServerUri is not null)
+        await RunNativeOperationAsync("刷新状态", async () =>
         {
-            await Windows.System.Launcher.LaunchUriAsync(_processService.ServerUri);
-        }
+            var executable = _locator.FindKopiaExecutable();
+            KopiaPath = executable ?? "未找到 kopia.exe";
+            KopiaVersion = await _locator.GetVersionAsync();
+
+            if (executable is null)
+            {
+                RepositoryStatus = "Kopia 本体缺失";
+                StatusText = "请先下载 Kopia 本体";
+                return;
+            }
+
+            await CheckRepositoryCoreAsync();
+            StatusText = "准备就绪";
+        });
     }
 
-    [RelayCommand(CanExecute = nameof(CanOpenServer))]
-    public void CopyServerAddress()
+    [RelayCommand(CanExecute = nameof(CanRunCommand))]
+    public async Task CheckRepositoryAsync()
     {
-        if (_processService.ServerUri is null)
+        await RunNativeOperationAsync("检查仓库", CheckRepositoryCoreAsync);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRunCommand))]
+    public async Task ListSnapshotsAsync()
+    {
+        await RunNativeOperationAsync("读取快照", async () =>
+        {
+            var result = await _commands.RunAsync(["snapshot", "list"]);
+            SnapshotSummary = result.Succeeded ? "已加载快照列表" : "当前没有可用仓库";
+            CommandOutput = result.DisplayText;
+        });
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRunCommand))]
+    public async Task ListPoliciesAsync()
+    {
+        await RunNativeOperationAsync("读取策略", async () =>
+        {
+            var result = await _commands.RunAsync(["policy", "list"]);
+            PolicySummary = result.Succeeded ? "已加载策略列表" : "当前没有可用仓库";
+            CommandOutput = result.DisplayText;
+        });
+    }
+
+    private async Task CheckRepositoryCoreAsync()
+    {
+        var result = await _commands.RunAsync(["repository", "status"]);
+        RepositoryStatus = result.Succeeded ? "已连接仓库" : "未连接仓库";
+        CommandOutput = result.DisplayText;
+    }
+
+    private async Task RunNativeOperationAsync(string operationName, Func<Task> operation)
+    {
+        if (IsBusy)
         {
             return;
         }
 
-        var package = new DataPackage();
-        package.SetText(_processService.ServerUri.ToString());
-        Clipboard.SetContent(package);
-        StatusText = "本地服务地址已复制";
-    }
-
-    private bool CanStart()
-    {
-        return !IsRunning;
-    }
-
-    private bool CanStop()
-    {
-        return IsRunning;
-    }
-
-    private bool CanOpenServer()
-    {
-        return IsRunning && _processService.ServerUri is not null;
-    }
-
-    private void OnProcessLogReceived(object? sender, string e)
-    {
-        if (_dispatcherQueue.HasThreadAccess)
+        try
         {
-            AppendLog(e);
-            return;
+            IsBusy = true;
+            StatusText = $"{operationName}中...";
+            await operation();
         }
-
-        _dispatcherQueue.TryEnqueue(() => AppendLog(e));
+        catch (Exception ex)
+        {
+            StatusText = "操作失败";
+            CommandOutput = ex.ToString();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
-    private void AppendLog(string message)
+    private bool CanRunCommand()
     {
-        LogText = string.IsNullOrWhiteSpace(LogText) ? message : $"{LogText}{Environment.NewLine}{message}";
+        return !IsBusy;
     }
 }

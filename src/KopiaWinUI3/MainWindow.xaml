@@ -1,8 +1,7 @@
 <Window
     x:Class="KopiaWinUI3.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:KopiaWinUI3">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid RowDefinitions="Auto,*" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid Padding="20,16" ColumnDefinitions="*,Auto" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
             <StackPanel Spacing="2">
@@ -11,48 +10,55 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Button Content="启动" Command="{x:Bind ViewModel.StartCommand}" />
-                <Button Content="停止" Command="{x:Bind ViewModel.StopCommand}" />
                 <Button Content="刷新" Command="{x:Bind ViewModel.RefreshCommand}" />
-                <Button Content="打开地址" Command="{x:Bind ViewModel.OpenServerCommand}" />
-                <Button Content="复制地址" Command="{x:Bind ViewModel.CopyServerAddressCommand}" />
+                <Button Content="仓库状态" Command="{x:Bind ViewModel.CheckRepositoryCommand}" />
+                <Button Content="快照" Command="{x:Bind ViewModel.ListSnapshotsCommand}" />
+                <Button Content="策略" Command="{x:Bind ViewModel.ListPoliciesCommand}" />
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1" ColumnDefinitions="320,*">
+        <Grid Grid.Row="1" ColumnDefinitions="340,*">
             <ScrollViewer BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
-                <StackPanel Padding="20" Spacing="16">
+                <StackPanel Padding="20" Spacing="18">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Kopia" FontWeight="SemiBold" />
+                        <TextBlock Text="Kopia 本体" FontWeight="SemiBold" />
                         <TextBlock Text="{x:Bind ViewModel.KopiaVersion, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
                         <TextBlock Text="{x:Bind ViewModel.KopiaPath, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.62" />
                     </StackPanel>
 
                     <StackPanel Spacing="4">
-                        <TextBlock Text="本地服务" FontWeight="SemiBold" />
-                        <TextBlock Text="{x:Bind ViewModel.ServerUrl, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
-                        <TextBlock Text="{x:Bind ViewModel.ProcessState, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.62" />
+                        <TextBlock Text="仓库" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind ViewModel.RepositoryStatus, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
                     </StackPanel>
 
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="日志" FontWeight="SemiBold" />
-                        <TextBox Text="{x:Bind ViewModel.LogText, Mode=OneWay}" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True" MinHeight="260" />
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="快照" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind ViewModel.SnapshotSummary, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="策略" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind ViewModel.PolicySummary, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
 
-            <Grid Grid.Column="1" Padding="24" RowDefinitions="Auto,*" Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}">
+            <Grid Grid.Column="1" Padding="24" RowDefinitions="Auto,*">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="Kopia Web UI" FontSize="24" FontWeight="SemiBold" />
-                    <TextBlock Text="{x:Bind ViewModel.ServerUrl, Mode=OneWay}" Opacity="0.72" />
+                    <TextBlock Text="原生 Kopia 控制台" FontSize="24" FontWeight="SemiBold" />
+                    <TextBlock Text="当前界面不再启动 Kopia Web UI。所有按钮直接调用 kopia.exe，并把结果显示在原生 WinUI3 控件中。" Opacity="0.72" TextWrapping="Wrap" />
                 </StackPanel>
 
-                <Border Grid.Row="1" Margin="0,20,0,0" Padding="28" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                    <StackPanel Spacing="12" VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="Kopia 页面在浏览器中打开" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                        <TextBlock Text="当前轻量 WinUI 构建链暂时禁用了内嵌 WebView2。启动服务后请使用“打开地址”，或复制左侧本地服务地址到浏览器。" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="620" Opacity="0.72" />
-                    </StackPanel>
-                </Border>
+                <TextBox
+                    Grid.Row="1"
+                    Margin="0,20,0,0"
+                    Text="{x:Bind ViewModel.CommandOutput, Mode=OneWay}"
+                    AcceptsReturn="True"
+                    IsReadOnly="True"
+                    TextWrapping="Wrap"
+                    FontFamily="Cascadia Mono"
+                    FontSize="13"
+                    Padding="14" />
             </Grid>
         </Grid>
     </Grid>

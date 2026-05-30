@@ -13,13 +13,6 @@ public sealed partial class MainWindow : Window
         ViewModel = App.Services.GetRequiredService<MainViewModel>();
         InitializeComponent();
 
-        Closed += OnClosed;
-
         _ = ViewModel.InitializeAsync();
-    }
-
-    private async void OnClosed(object sender, WindowEventArgs args)
-    {
-        await ViewModel.StopAsync();
     }
 }

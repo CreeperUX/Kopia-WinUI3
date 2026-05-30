@@ -48,6 +48,7 @@ public partial class App : Application
         var services = new ServiceCollection();
 
         services.AddSingleton<IKopiaLocator, KopiaLocator>();
+        services.AddSingleton<IKopiaCommandService, KopiaCommandService>();
         services.AddSingleton<ILocalPortService, LocalPortService>();
         services.AddSingleton<IKopiaProcessService, KopiaProcessService>();
         services.AddSingleton<MainViewModel>();
