@@ -32,6 +32,7 @@ public sealed class KopiaProcessService : IKopiaProcessService
             ?? throw new FileNotFoundException("未找到 kopia.exe。请把 Kopia Windows 版二进制放到 third_party/kopia/kopia.exe。");
 
         var port = _portService.GetAvailableLoopbackPort();
+        var listenAddress = $"127.0.0.1:{port}";
         ServerUri = new Uri($"http://127.0.0.1:{port}/");
 
         var startInfo = new ProcessStartInfo
@@ -46,7 +47,7 @@ public sealed class KopiaProcessService : IKopiaProcessService
 
         startInfo.ArgumentList.Add("server");
         startInfo.ArgumentList.Add("start");
-        startInfo.ArgumentList.Add($"--address={ServerUri}");
+        startInfo.ArgumentList.Add($"--address={listenAddress}");
         startInfo.ArgumentList.Add("--ui");
         startInfo.ArgumentList.Add("--insecure");
         startInfo.ArgumentList.Add("--without-password");
