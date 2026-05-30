@@ -53,6 +53,7 @@ public partial class App : Application
         services.AddSingleton<IKopiaProcessService, KopiaProcessService>();
         services.AddSingleton<IFolderPickerService, FolderPickerService>();
         services.AddSingleton<INotificationDialogService, NotificationDialogService>();
+        services.AddSingleton<IVerifiedCopyService, VerifiedCopyService>();
         services.AddSingleton<MainViewModel>();
 
         return services.BuildServiceProvider();

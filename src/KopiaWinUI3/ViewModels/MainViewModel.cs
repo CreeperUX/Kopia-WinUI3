@@ -18,6 +18,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IKopiaCommandService _commands;
     private readonly IFolderPickerService _folderPicker;
     private readonly INotificationDialogService _dialogs;
+    private readonly IVerifiedCopyService _verifiedCopy;
     private readonly DispatcherQueue _dispatcherQueue;
 
     [ObservableProperty]
@@ -56,6 +57,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string repositoryPassword = string.Empty;
+
+    [ObservableProperty]
+    private int backupModeIndex;
 
     [ObservableProperty]
     private int repositoryProviderIndex;
@@ -154,12 +158,14 @@ public partial class MainViewModel : ObservableObject
         IKopiaLocator locator,
         IKopiaCommandService commands,
         IFolderPickerService folderPicker,
-        INotificationDialogService dialogs)
+        INotificationDialogService dialogs,
+        IVerifiedCopyService verifiedCopy)
     {
         _locator = locator;
         _commands = commands;
         _folderPicker = folderPicker;
         _dialogs = dialogs;
+        _verifiedCopy = verifiedCopy;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     }
 
@@ -177,6 +183,10 @@ public partial class MainViewModel : ObservableObject
     public Visibility WebDavDestinationVisibility => RepositoryProviderIndex == 3 ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility B2DestinationVisibility => RepositoryProviderIndex == 4 ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility KopiaRepositorySetupVisibility => BackupModeIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility VerifiedCopyNoticeVisibility => BackupModeIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
 
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task RefreshAsync()
@@ -257,6 +267,12 @@ public partial class MainViewModel : ObservableObject
         await RunMonitoredOperationAsync("开始备份", async output =>
         {
             ValidateDirectoryText(BackupSourcePath, "备份源路径");
+            if (BackupModeIndex == 1)
+            {
+                await RunVerifiedCopyAsync();
+                return;
+            }
+
             await EnsureRepositoryReadyForBackupAsync(output);
 
             var args = new List<string> { "--progress", "snapshot", "create" };
@@ -434,6 +450,50 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(B2DestinationVisibility));
     }
 
+    partial void OnBackupModeIndexChanged(int value)
+    {
+        if (value == 1 && RepositoryProviderIndex != 0)
+        {
+            RepositoryProviderIndex = 0;
+        }
+
+        OnPropertyChanged(nameof(KopiaRepositorySetupVisibility));
+        OnPropertyChanged(nameof(VerifiedCopyNoticeVisibility));
+    }
+
+    private async Task RunVerifiedCopyAsync()
+    {
+        if (RepositoryProviderIndex != 0)
+        {
+            throw new InvalidOperationException("校验文件拷贝目前只支持本地文件夹目的地。");
+        }
+
+        ValidateDirectoryText(RepositoryPath, "本地目标路径");
+
+        var stopwatch = Stopwatch.StartNew();
+        AppendOutput("开始校验文件拷贝...");
+
+        var progress = new Progress<VerifiedCopyProgress>(copyProgress =>
+        {
+            IsProgressIndeterminate = copyProgress.TotalBytes <= 0;
+            if (copyProgress.TotalBytes > 0)
+            {
+                ProgressValue = Math.Clamp(copyProgress.BytesCopied * 100.0 / copyProgress.TotalBytes, 0, 100);
+            }
+
+            TaskProgressText = copyProgress.Message;
+            if (copyProgress.BytesCopied > 0 && stopwatch.Elapsed.TotalSeconds > 0.5)
+            {
+                TransferSpeedText = $"{FormatBytes((long)(copyProgress.BytesCopied / stopwatch.Elapsed.TotalSeconds))}/s";
+            }
+        });
+
+        var result = await _verifiedCopy.CopyAsync(BackupSourcePath, RepositoryPath, progress);
+        SnapshotSummary = $"校验拷贝完成：{result.FileCount} 个文件";
+        StatusText = "校验拷贝完成";
+        CommandOutput = $"校验拷贝完成。{Environment.NewLine}目标路径：{result.DestinationPath}{Environment.NewLine}文件数量：{result.FileCount}{Environment.NewLine}总大小：{FormatBytes(result.TotalBytes)}";
+    }
+
     private IReadOnlyList<string> BuildRepositoryArguments(string operation)
     {
         ValidatePassword();
@@ -519,6 +579,23 @@ public partial class MainViewModel : ObservableObject
         {
             args.Add($"{optionName}={value}");
         }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB", "TB"];
+        var value = (double)bytes;
+        var unitIndex = 0;
+
+        while (value >= 1024 && unitIndex < units.Length - 1)
+        {
+            value /= 1024;
+            unitIndex++;
+        }
+
+        return unitIndex == 0
+            ? $"{bytes} {units[unitIndex]}"
+            : $"{value:0.##} {units[unitIndex]}";
     }
 
     private async Task RunOperationAsync(string operationName, Func<Task> operation)
