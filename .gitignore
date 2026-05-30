@@ -1,0 +1,11 @@
+.ssh/
+.dotnet-home/
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.nupkg
+artifacts/
+third_party/kopia/*.exe
+third_party/kopia/*.zip

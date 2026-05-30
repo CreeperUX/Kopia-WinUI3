@@ -1,0 +1,49 @@
+<Window
+    x:Class="KopiaWinUI3.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:KopiaWinUI3"
+    xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    xmlns:wv2="using:Microsoft.UI.Xaml.Controls">
+    <Grid RowDefinitions="Auto,*" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid Padding="20,16" ColumnDefinitions="*,Auto" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Spacing="2">
+                <TextBlock Text="Kopia WinUI3" FontSize="22" FontWeight="SemiBold" />
+                <TextBlock Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" Opacity="0.72" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Content="启动" Command="{x:Bind ViewModel.StartCommand}" />
+                <Button Content="停止" Command="{x:Bind ViewModel.StopCommand}" />
+                <Button Content="刷新" Command="{x:Bind ViewModel.RefreshCommand}" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="320,*">
+            <ScrollViewer BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
+                <StackPanel Padding="20" Spacing="16">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Kopia" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind ViewModel.KopiaVersion, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
+                        <TextBlock Text="{x:Bind ViewModel.KopiaPath, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.62" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="本地服务" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind ViewModel.ServerUrl, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8" />
+                        <TextBlock Text="{x:Bind ViewModel.ProcessState, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.62" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="日志" FontWeight="SemiBold" />
+                        <TextBox Text="{x:Bind ViewModel.LogText, Mode=OneWay}" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True" MinHeight="260" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Grid Grid.Column="1">
+                <wv2:WebView2 x:Name="KopiaWebView" DefaultBackgroundColor="Transparent" />
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
