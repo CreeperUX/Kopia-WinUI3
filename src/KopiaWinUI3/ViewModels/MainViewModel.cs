@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KopiaWinUI3.Services;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 
 namespace KopiaWinUI3.ViewModels;
 
@@ -16,6 +17,18 @@ public partial class MainViewModel : ObservableObject
     private static readonly Regex PercentRegex = new(
         @",\s*(?<percent>\d+(?:\.\d+)?)%,",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex EtaRegex = new(
+        @"ETA\s+(?<eta>[^,\s]+)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex AnsiRegex = new(
+        @"\x1B\[[0-?]*[ -/]*[@-~]",
+        RegexOptions.Compiled);
+
+    private static readonly int[] TransferOptions = [1, 2, 4, 8, 16, 32, 64];
+    private static readonly int[] CheckerOptions = [1, 2, 4, 8, 16, 32, 64, 128];
+    private static readonly int[] BufferSizeOptions = [4, 8, 16, 32, 64, 128];
 
     private readonly IRcloneLocator _locator;
     private readonly IRcloneCommandService _commands;
@@ -59,13 +72,13 @@ public partial class MainViewModel : ObservableObject
     private bool dryRun;
 
     [ObservableProperty]
-    private string transfers = "8";
+    private int transfersIndex = 3;
 
     [ObservableProperty]
-    private string checkers = "16";
+    private int checkersIndex = 4;
 
     [ObservableProperty]
-    private string bufferSizeMb = "16";
+    private int bufferSizeIndex = 2;
 
     [ObservableProperty]
     private string bandwidthLimit = string.Empty;
@@ -75,6 +88,12 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string commandOutput = string.Empty;
+
+    [ObservableProperty]
+    private bool isCliOutputVisible;
+
+    [ObservableProperty]
+    private bool isAdvancedSettingsVisible;
 
     [ObservableProperty]
     private bool isProgressIndeterminate;
@@ -90,6 +109,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string elapsedTimeText = "00:00";
+
+    [ObservableProperty]
+    private string etaText = "--";
 
     [ObservableProperty]
     private string activeTaskName = "无任务";
@@ -110,6 +132,26 @@ public partial class MainViewModel : ObservableObject
     public async Task InitializeAsync()
     {
         await RefreshAsync();
+    }
+
+    public Visibility CliOutputVisibility => IsCliOutputVisible ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility AdvancedSettingsVisibility => IsAdvancedSettingsVisible ? Visibility.Visible : Visibility.Collapsed;
+
+    partial void OnIsCliOutputVisibleChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CliOutputVisibility));
+    }
+
+    partial void OnIsAdvancedSettingsVisibleChanged(bool value)
+    {
+        OnPropertyChanged(nameof(AdvancedSettingsVisibility));
+    }
+
+    [RelayCommand]
+    public void ToggleAdvancedSettings()
+    {
+        IsAdvancedSettingsVisible = !IsAdvancedSettingsVisible;
     }
 
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
@@ -194,9 +236,9 @@ public partial class MainViewModel : ObservableObject
             "--progress",
             "--stats=1s",
             "--stats-one-line",
-            $"--transfers={ParsePositiveInt(Transfers, "并行传输数", 1, 128)}",
-            $"--checkers={ParsePositiveInt(Checkers, "并行检查数", 1, 256)}",
-            $"--buffer-size={ParsePositiveInt(BufferSizeMb, "缓冲区大小", 1, 1024)}M"
+            $"--transfers={GetSelectedValue(TransferOptions, TransfersIndex, "并行传输数")}",
+            $"--checkers={GetSelectedValue(CheckerOptions, CheckersIndex, "并行检查数")}",
+            $"--buffer-size={GetSelectedValue(BufferSizeOptions, BufferSizeIndex, "缓冲区大小")}M"
         };
 
         if (UseChecksum)
@@ -229,7 +271,7 @@ public partial class MainViewModel : ObservableObject
             "--progress",
             "--stats=1s",
             "--stats-one-line",
-            $"--checkers={ParsePositiveInt(Checkers, "并行检查数", 1, 256)}"
+            $"--checkers={GetSelectedValue(CheckerOptions, CheckersIndex, "并行检查数")}"
         };
 
         if (UseChecksum)
@@ -310,6 +352,7 @@ public partial class MainViewModel : ObservableObject
             TaskProgressText = "正在启动";
             TransferSpeedText = "--";
             ElapsedTimeText = "00:00";
+            EtaText = "--";
             CommandOutput = string.Empty;
             StatusText = $"{operationName}中...";
 
@@ -352,16 +395,23 @@ public partial class MainViewModel : ObservableObject
     {
         Enqueue(() =>
         {
-            AppendOutput(line);
-            TaskProgressText = ExtractStatus(line);
+            var cleanLine = SanitizeOutputLine(line);
+            AppendOutput(cleanLine);
+            TaskProgressText = ExtractStatus(cleanLine);
 
-            var speedMatch = SpeedRegex.Match(line);
+            var speedMatch = SpeedRegex.Match(cleanLine);
             if (speedMatch.Success)
             {
                 TransferSpeedText = $"{speedMatch.Groups["value"].Value} {speedMatch.Groups["unit"].Value}/s";
             }
 
-            var percentMatch = PercentRegex.Match(line);
+            var etaMatch = EtaRegex.Match(cleanLine);
+            if (etaMatch.Success)
+            {
+                EtaText = etaMatch.Groups["eta"].Value;
+            }
+
+            var percentMatch = PercentRegex.Match(cleanLine);
             if (percentMatch.Success && double.TryParse(percentMatch.Groups["percent"].Value, out var percent))
             {
                 IsProgressIndeterminate = false;
@@ -389,6 +439,17 @@ public partial class MainViewModel : ObservableObject
         }
 
         return string.IsNullOrWhiteSpace(line) ? "运行中" : line.Trim();
+    }
+
+    private static string SanitizeOutputLine(string line)
+    {
+        var cleaned = AnsiRegex.Replace(line, string.Empty)
+            .Replace('\r', ' ');
+
+        return new string(cleaned
+            .Where(static ch => !char.IsControl(ch) || ch == '\t')
+            .ToArray())
+            .Trim();
     }
 
     private void AppendOutput(string message)
@@ -434,19 +495,14 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    private static int ParsePositiveInt(string value, string label, int minimum, int maximum)
+    private static int GetSelectedValue(IReadOnlyList<int> options, int selectedIndex, string label)
     {
-        if (!int.TryParse(value, out var parsed))
+        if (selectedIndex < 0 || selectedIndex >= options.Count)
         {
-            throw new InvalidOperationException($"{label}必须是数字。");
+            throw new InvalidOperationException($"请选择有效的{label}。");
         }
 
-        if (parsed < minimum || parsed > maximum)
-        {
-            throw new InvalidOperationException($"{label}必须在 {minimum} 到 {maximum} 之间。");
-        }
-
-        return parsed;
+        return options[selectedIndex];
     }
 
     private static void ThrowIfCommandFailed(RcloneCommandResult result, string fallbackMessage)

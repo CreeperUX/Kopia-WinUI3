@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 
 namespace KopiaWinUI3.Services;
 
@@ -29,6 +30,8 @@ public sealed class RcloneCommandService : IRcloneCommandService
             FileName = executable,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
             UseShellExecute = false,
             CreateNoWindow = true
         };

@@ -10,6 +10,10 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <ToggleSwitch Header="CLI" IsOn="{x:Bind ViewModel.IsCliOutputVisible, Mode=TwoWay}" />
+                <Button Command="{x:Bind ViewModel.ToggleAdvancedSettingsCommand}" ToolTipService.ToolTip="高级 rclone 设置">
+                    <FontIcon Glyph="&#xE713;" FontSize="16" />
+                </Button>
                 <Button Content="刷新" Command="{x:Bind ViewModel.RefreshCommand}" />
                 <Button Content="校验目标" Command="{x:Bind ViewModel.CheckDestinationCommand}" />
             </StackPanel>
@@ -124,25 +128,60 @@
                         <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
                             <TextBlock Text="性能参数" FontSize="20" FontWeight="SemiBold" />
 
-                            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*" ColumnSpacing="12">
-                                <TextBox
+                            <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                                <ComboBox
                                     Header="transfers"
-                                    Text="{x:Bind ViewModel.Transfers, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBox
+                                    SelectedIndex="{x:Bind ViewModel.TransfersIndex, Mode=TwoWay}"
+                                    HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Content="1" />
+                                    <ComboBoxItem Content="2" />
+                                    <ComboBoxItem Content="4" />
+                                    <ComboBoxItem Content="8" />
+                                    <ComboBoxItem Content="16" />
+                                    <ComboBoxItem Content="32" />
+                                    <ComboBoxItem Content="64" />
+                                </ComboBox>
+                                <ComboBox
                                     Grid.Column="1"
                                     Header="checkers"
-                                    Text="{x:Bind ViewModel.Checkers, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBox
+                                    SelectedIndex="{x:Bind ViewModel.CheckersIndex, Mode=TwoWay}"
+                                    HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Content="1" />
+                                    <ComboBoxItem Content="2" />
+                                    <ComboBoxItem Content="4" />
+                                    <ComboBoxItem Content="8" />
+                                    <ComboBoxItem Content="16" />
+                                    <ComboBoxItem Content="32" />
+                                    <ComboBoxItem Content="64" />
+                                    <ComboBoxItem Content="128" />
+                                </ComboBox>
+                                <ComboBox
                                     Grid.Column="2"
                                     Header="buffer MB"
-                                    Text="{x:Bind ViewModel.BufferSizeMb, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    SelectedIndex="{x:Bind ViewModel.BufferSizeIndex, Mode=TwoWay}"
+                                    HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Content="4" />
+                                    <ComboBoxItem Content="8" />
+                                    <ComboBoxItem Content="16" />
+                                    <ComboBoxItem Content="32" />
+                                    <ComboBoxItem Content="64" />
+                                    <ComboBoxItem Content="128" />
+                                </ComboBox>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Visibility="{x:Bind ViewModel.AdvancedSettingsVisibility, Mode=OneWay}">
+                        <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
+                            <TextBlock Text="高级 rclone 设置" FontSize="20" FontWeight="SemiBold" />
+
+                            <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12">
                                 <TextBox
-                                    Grid.Column="3"
                                     Header="限速"
                                     PlaceholderText="例如 800M"
                                     Text="{x:Bind ViewModel.BandwidthLimit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBox
-                                    Grid.Column="4"
+                                    Grid.Column="1"
                                     Header="额外参数"
                                     PlaceholderText="例如 --fast-list"
                                     Text="{x:Bind ViewModel.ExtraArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
@@ -152,7 +191,7 @@
 
                     <Border Padding="18" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
                         <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
-                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="18">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="18">
                                 <StackPanel Spacing="3">
                                     <TextBlock Text="任务监控" FontSize="20" FontWeight="SemiBold" />
                                     <TextBlock Text="{x:Bind ViewModel.ActiveTaskName, Mode=OneWay}" Opacity="0.72" />
@@ -169,6 +208,11 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="3" Spacing="3">
+                                    <TextBlock Text="ETA" Opacity="0.62" />
+                                    <TextBlock Text="{x:Bind ViewModel.EtaText, Mode=OneWay}" FontWeight="SemiBold" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="4" Spacing="3">
                                     <TextBlock Text="状态" Opacity="0.62" />
                                     <TextBlock Text="{x:Bind ViewModel.TaskProgressText, Mode=OneWay}" FontWeight="SemiBold" />
                                 </StackPanel>
@@ -183,6 +227,7 @@
 
                             <TextBox
                                 Grid.Row="2"
+                                Visibility="{x:Bind ViewModel.CliOutputVisibility, Mode=OneWay}"
                                 Text="{x:Bind ViewModel.CommandOutput, Mode=OneWay}"
                                 AcceptsReturn="True"
                                 IsReadOnly="True"
