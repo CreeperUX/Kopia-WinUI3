@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
 using KopiaWinUI3.Services;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace KopiaWinUI3.ViewModels;
 
@@ -14,6 +15,8 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StartCommand))]
     [NotifyCanExecuteChangedFor(nameof(StopCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenServerCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CopyServerAddressCommand))]
     private bool isRunning;
 
     [ObservableProperty]
@@ -104,6 +107,29 @@ public partial class MainViewModel : ObservableObject
         StatusText = executable is null ? "请放置 Kopia 二进制后再启动" : "准备就绪";
     }
 
+    [RelayCommand(CanExecute = nameof(CanOpenServer))]
+    public async Task OpenServerAsync()
+    {
+        if (_processService.ServerUri is not null)
+        {
+            await Windows.System.Launcher.LaunchUriAsync(_processService.ServerUri);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanOpenServer))]
+    public void CopyServerAddress()
+    {
+        if (_processService.ServerUri is null)
+        {
+            return;
+        }
+
+        var package = new DataPackage();
+        package.SetText(_processService.ServerUri.ToString());
+        Clipboard.SetContent(package);
+        StatusText = "本地服务地址已复制";
+    }
+
     private bool CanStart()
     {
         return !IsRunning;
@@ -112,6 +138,11 @@ public partial class MainViewModel : ObservableObject
     private bool CanStop()
     {
         return IsRunning;
+    }
+
+    private bool CanOpenServer()
+    {
+        return IsRunning && _processService.ServerUri is not null;
     }
 
     private void OnProcessLogReceived(object? sender, string e)

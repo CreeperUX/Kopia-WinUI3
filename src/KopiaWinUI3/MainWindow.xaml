@@ -14,6 +14,8 @@
                 <Button Content="启动" Command="{x:Bind ViewModel.StartCommand}" />
                 <Button Content="停止" Command="{x:Bind ViewModel.StopCommand}" />
                 <Button Content="刷新" Command="{x:Bind ViewModel.RefreshCommand}" />
+                <Button Content="打开地址" Command="{x:Bind ViewModel.OpenServerCommand}" />
+                <Button Content="复制地址" Command="{x:Bind ViewModel.CopyServerAddressCommand}" />
             </StackPanel>
         </Grid>
 
@@ -47,8 +49,8 @@
 
                 <Border Grid.Row="1" Margin="0,20,0,0" Padding="28" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
                     <StackPanel Spacing="12" VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="WebView2 承载区" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                        <TextBlock Text="当前轻量开发环境已能编译和启动 WinUI3。这里后续会加载本地 kopia server --ui 页面。" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="520" Opacity="0.72" />
+                        <TextBlock Text="Kopia 页面在浏览器中打开" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        <TextBlock Text="当前轻量 WinUI 构建链暂时禁用了内嵌 WebView2。启动服务后请使用“打开地址”，或复制左侧本地服务地址到浏览器。" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="620" Opacity="0.72" />
                     </StackPanel>
                 </Border>
             </Grid>
