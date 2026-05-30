@@ -11,19 +11,36 @@ public partial class App : Application
 
     public App()
     {
-        Services = ConfigureServices();
-        InitializeComponent();
+        UnhandledException += OnUnhandledException;
+        try
+        {
+            Services = ConfigureServices();
+            InitializeComponent();
+        }
+        catch (Exception ex)
+        {
+            WriteStartupError(ex);
+            throw;
+        }
     }
 
     public static IServiceProvider Services { get; private set; } = default!;
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        _window = new MainWindow
+        try
         {
-            Title = "Kopia WinUI3"
-        };
-        _window.Activate();
+            _window = new MainWindow
+            {
+                Title = "Kopia WinUI3"
+            };
+            _window.Activate();
+        }
+        catch (Exception ex)
+        {
+            WriteStartupError(ex);
+            throw;
+        }
     }
 
     private static IServiceProvider ConfigureServices()
@@ -36,5 +53,17 @@ public partial class App : Application
         services.AddSingleton<MainViewModel>();
 
         return services.BuildServiceProvider();
+    }
+
+    private static void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        WriteStartupError(e.Exception);
+    }
+
+    private static void WriteStartupError(Exception exception)
+    {
+        var logDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
+        Directory.CreateDirectory(logDirectory);
+        File.WriteAllText(Path.Combine(logDirectory, "startup-error.txt"), exception.ToString());
     }
 }

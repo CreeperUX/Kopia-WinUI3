@@ -13,20 +13,13 @@ public sealed partial class MainWindow : Window
         ViewModel = App.Services.GetRequiredService<MainViewModel>();
         InitializeComponent();
 
-        ViewModel.ServerStarted += OnServerStarted;
         Closed += OnClosed;
 
         _ = ViewModel.InitializeAsync();
     }
 
-    private void OnServerStarted(object? sender, Uri serverUri)
-    {
-        KopiaWebView.Source = serverUri;
-    }
-
     private async void OnClosed(object sender, WindowEventArgs args)
     {
-        ViewModel.ServerStarted -= OnServerStarted;
         await ViewModel.StopAsync();
     }
 }

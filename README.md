@@ -16,8 +16,15 @@ This repository starts with a practical MVP:
 
 - Windows 10 1809 or newer.
 - .NET 8 SDK.
-- Visual Studio 2022 with WinUI/Windows App SDK components. A plain .NET SDK install is not enough for a full WinUI build because the XAML/PRI packaging tasks are provided by the Visual Studio Windows app tooling.
+- WinUI CLI templates:
+
+```powershell
+dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates
+```
+
 - WebView2 Runtime on the target machine.
+
+Visual Studio 2022 is optional. The project uses `Microsoft.Windows.SDK.BuildTools.WinApp` so the basic app can be built from the .NET CLI.
 
 ## Prepare Kopia
 
@@ -32,9 +39,9 @@ The app also searches for `kopia.exe` on `PATH`, but the installer build should 
 ## Build
 
 ```powershell
-$env:DOTNET_CLI_HOME = Join-Path (Get-Location) '.dotnet-home'
 dotnet restore .\src\KopiaWinUI3\KopiaWinUI3.csproj
-dotnet build .\src\KopiaWinUI3\KopiaWinUI3.csproj -c Debug -p:Platform=x64
+dotnet build .\src\KopiaWinUI3\KopiaWinUI3.csproj -c Debug
+dotnet run --project .\src\KopiaWinUI3\KopiaWinUI3.csproj -c Debug --no-build
 ```
 
 If build fails with a missing `Microsoft.Build.Packaging.Pri.Tasks.dll`, install the Visual Studio workload/component set for Windows App SDK and WinUI development, then build again from Developer PowerShell or Visual Studio.

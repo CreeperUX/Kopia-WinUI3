@@ -1,5 +1,6 @@
 .ssh/
 .dotnet-home/
+.template-probe/
 bin/
 obj/
 .vs/
