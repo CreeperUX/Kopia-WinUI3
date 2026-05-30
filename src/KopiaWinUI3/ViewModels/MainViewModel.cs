@@ -252,6 +252,7 @@ public partial class MainViewModel : ObservableObject
         await RunMonitoredOperationAsync("开始备份", async output =>
         {
             ValidateDirectoryText(BackupSourcePath, "备份源路径");
+            await EnsureRepositoryReadyForBackupAsync(output);
 
             var args = new List<string> { "--progress", "snapshot", "create" };
             if (!string.IsNullOrWhiteSpace(SnapshotDescription))
@@ -262,9 +263,15 @@ public partial class MainViewModel : ObservableObject
             args.Add(BackupSourcePath);
 
             var result = await _commands.RunStreamingAsync(args, output);
-            SnapshotSummary = result.Succeeded ? "备份完成" : "备份失败";
-            CommandOutput = result.DisplayText;
-            StatusText = result.Succeeded ? "备份完成" : "备份失败";
+            if (!result.Succeeded)
+            {
+                SnapshotSummary = "备份失败";
+                StatusText = "备份失败";
+                throw new InvalidOperationException(result.DisplayText);
+            }
+
+            SnapshotSummary = "备份完成";
+            StatusText = "备份完成";
         });
     }
 
@@ -305,8 +312,13 @@ public partial class MainViewModel : ObservableObject
                 RestoreTargetPath
             ], output);
 
-            CommandOutput = result.DisplayText;
-            StatusText = result.Succeeded ? "恢复完成" : "恢复失败";
+            if (!result.Succeeded)
+            {
+                StatusText = "恢复失败";
+                throw new InvalidOperationException(result.DisplayText);
+            }
+
+            StatusText = "恢复完成";
         });
     }
 
@@ -315,6 +327,52 @@ public partial class MainViewModel : ObservableObject
         var result = await _commands.RunAsync(["repository", "status"]);
         RepositoryStatus = result.Succeeded ? "已连接仓库" : "未连接仓库";
         CommandOutput = result.DisplayText;
+    }
+
+    private async Task EnsureRepositoryReadyForBackupAsync(Action<string> output)
+    {
+        var status = await _commands.RunAsync(["repository", "status"]);
+        if (status.Succeeded)
+        {
+            RepositoryStatus = "已连接仓库";
+            return;
+        }
+
+        RepositoryStatus = "未连接仓库";
+
+        if (RepositoryProviderIndex != 0)
+        {
+            throw new InvalidOperationException(
+                "当前没有连接 Kopia 仓库。请先在右侧“仓库初始化”中创建或连接仓库，然后再开始备份。");
+        }
+
+        ValidateDirectoryText(RepositoryPath, "本地仓库路径");
+        ValidatePassword();
+
+        output("当前未连接 Kopia 仓库，正在尝试连接本地仓库...");
+        var connectResult = await _commands.RunAsync(BuildRepositoryArguments("connect"));
+        if (connectResult.Succeeded)
+        {
+            RepositoryStatus = "已连接仓库";
+            output("已连接本地仓库。");
+            return;
+        }
+
+        output("本地仓库连接失败，正在尝试创建新的本地仓库...");
+        var createResult = await _commands.RunAsync(BuildRepositoryArguments("create"));
+        if (createResult.Succeeded)
+        {
+            RepositoryStatus = "已创建并连接仓库";
+            output("已创建并连接本地仓库。");
+            return;
+        }
+
+        throw new InvalidOperationException(
+            "无法自动准备本地 Kopia 仓库。请确认右侧目标路径可写，并填写 Kopia 加密密码。\n\n"
+            + "连接输出：\n"
+            + connectResult.DisplayText
+            + "\n\n创建输出：\n"
+            + createResult.DisplayText);
     }
 
     partial void OnRepositoryProviderIndexChanged(int value)
