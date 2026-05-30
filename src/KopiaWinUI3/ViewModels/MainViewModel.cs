@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KopiaWinUI3.Services;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 
 namespace KopiaWinUI3.ViewModels;
 
@@ -53,6 +54,63 @@ public partial class MainViewModel : ObservableObject
     private string repositoryPassword = string.Empty;
 
     [ObservableProperty]
+    private int repositoryProviderIndex;
+
+    [ObservableProperty]
+    private string s3Bucket = string.Empty;
+
+    [ObservableProperty]
+    private string s3Endpoint = "s3.amazonaws.com";
+
+    [ObservableProperty]
+    private string s3Region = string.Empty;
+
+    [ObservableProperty]
+    private string s3AccessKey = string.Empty;
+
+    [ObservableProperty]
+    private string s3SecretAccessKey = string.Empty;
+
+    [ObservableProperty]
+    private string s3Prefix = string.Empty;
+
+    [ObservableProperty]
+    private string sftpHost = string.Empty;
+
+    [ObservableProperty]
+    private string sftpPort = "22";
+
+    [ObservableProperty]
+    private string sftpUsername = string.Empty;
+
+    [ObservableProperty]
+    private string sftpPassword = string.Empty;
+
+    [ObservableProperty]
+    private string sftpPath = string.Empty;
+
+    [ObservableProperty]
+    private string webDavUrl = string.Empty;
+
+    [ObservableProperty]
+    private string webDavUsername = string.Empty;
+
+    [ObservableProperty]
+    private string webDavPassword = string.Empty;
+
+    [ObservableProperty]
+    private string b2Bucket = string.Empty;
+
+    [ObservableProperty]
+    private string b2KeyId = string.Empty;
+
+    [ObservableProperty]
+    private string b2Key = string.Empty;
+
+    [ObservableProperty]
+    private string b2Prefix = string.Empty;
+
+    [ObservableProperty]
     private string backupSourcePath = string.Empty;
 
     [ObservableProperty]
@@ -100,6 +158,16 @@ public partial class MainViewModel : ObservableObject
         await RefreshAsync();
     }
 
+    public Visibility FilesystemDestinationVisibility => RepositoryProviderIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility S3DestinationVisibility => RepositoryProviderIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility SftpDestinationVisibility => RepositoryProviderIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility WebDavDestinationVisibility => RepositoryProviderIndex == 3 ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility B2DestinationVisibility => RepositoryProviderIndex == 4 ? Visibility.Visible : Visibility.Collapsed;
+
     [RelayCommand(CanExecute = nameof(CanRunCommand))]
     public async Task RefreshAsync()
     {
@@ -132,17 +200,7 @@ public partial class MainViewModel : ObservableObject
     {
         await RunOperationAsync("创建仓库", async () =>
         {
-            ValidateDirectoryText(RepositoryPath, "仓库目的路径");
-            ValidatePassword();
-            Directory.CreateDirectory(RepositoryPath);
-
-            var result = await _commands.RunAsync([
-                $"--password={RepositoryPassword}",
-                "repository",
-                "create",
-                "filesystem",
-                $"--path={RepositoryPath}"
-            ]);
+            var result = await _commands.RunAsync(BuildRepositoryArguments("create"));
 
             RepositoryStatus = result.Succeeded ? "已创建并连接仓库" : "创建仓库失败";
             CommandOutput = result.DisplayText;
@@ -154,16 +212,7 @@ public partial class MainViewModel : ObservableObject
     {
         await RunOperationAsync("连接仓库", async () =>
         {
-            ValidateDirectoryText(RepositoryPath, "仓库目的路径");
-            ValidatePassword();
-
-            var result = await _commands.RunAsync([
-                $"--password={RepositoryPassword}",
-                "repository",
-                "connect",
-                "filesystem",
-                $"--path={RepositoryPath}"
-            ]);
+            var result = await _commands.RunAsync(BuildRepositoryArguments("connect"));
 
             RepositoryStatus = result.Succeeded ? "已连接仓库" : "连接仓库失败";
             CommandOutput = result.DisplayText;
@@ -239,6 +288,102 @@ public partial class MainViewModel : ObservableObject
         var result = await _commands.RunAsync(["repository", "status"]);
         RepositoryStatus = result.Succeeded ? "已连接仓库" : "未连接仓库";
         CommandOutput = result.DisplayText;
+    }
+
+    partial void OnRepositoryProviderIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(FilesystemDestinationVisibility));
+        OnPropertyChanged(nameof(S3DestinationVisibility));
+        OnPropertyChanged(nameof(SftpDestinationVisibility));
+        OnPropertyChanged(nameof(WebDavDestinationVisibility));
+        OnPropertyChanged(nameof(B2DestinationVisibility));
+    }
+
+    private IReadOnlyList<string> BuildRepositoryArguments(string operation)
+    {
+        ValidatePassword();
+
+        var args = new List<string>
+        {
+            $"--password={RepositoryPassword}",
+            "repository",
+            operation
+        };
+
+        switch (RepositoryProviderIndex)
+        {
+            case 0:
+                ValidateDirectoryText(RepositoryPath, "本地仓库路径");
+                if (operation == "create")
+                {
+                    Directory.CreateDirectory(RepositoryPath);
+                }
+
+                args.Add("filesystem");
+                args.Add($"--path={RepositoryPath}");
+                break;
+
+            case 1:
+                ValidateText(S3Bucket, "S3 Bucket");
+                ValidateText(S3AccessKey, "S3 Access Key");
+                ValidateText(S3SecretAccessKey, "S3 Secret Access Key");
+
+                args.Add("s3");
+                args.Add($"--bucket={S3Bucket}");
+                AddOptional(args, "--endpoint", S3Endpoint);
+                AddOptional(args, "--region", S3Region);
+                AddOptional(args, "--prefix", S3Prefix);
+                args.Add($"--access-key={S3AccessKey}");
+                args.Add($"--secret-access-key={S3SecretAccessKey}");
+                break;
+
+            case 2:
+                ValidateText(SftpHost, "SFTP 主机");
+                ValidateText(SftpUsername, "SFTP 用户名");
+                ValidateText(SftpPath, "SFTP 仓库路径");
+
+                args.Add("sftp");
+                args.Add($"--host={SftpHost}");
+                AddOptional(args, "--port", SftpPort);
+                args.Add($"--username={SftpUsername}");
+                AddOptional(args, "--sftp-password", SftpPassword);
+                args.Add($"--path={SftpPath}");
+                break;
+
+            case 3:
+                ValidateText(WebDavUrl, "WebDAV 地址");
+
+                args.Add("webdav");
+                args.Add($"--url={WebDavUrl}");
+                AddOptional(args, "--webdav-username", WebDavUsername);
+                AddOptional(args, "--webdav-password", WebDavPassword);
+                break;
+
+            case 4:
+                ValidateText(B2Bucket, "B2 Bucket");
+                ValidateText(B2KeyId, "B2 Key ID");
+                ValidateText(B2Key, "B2 Application Key");
+
+                args.Add("b2");
+                args.Add($"--bucket={B2Bucket}");
+                args.Add($"--key-id={B2KeyId}");
+                args.Add($"--key={B2Key}");
+                AddOptional(args, "--prefix", B2Prefix);
+                break;
+
+            default:
+                throw new InvalidOperationException("请选择仓库目的地类型。");
+        }
+
+        return args;
+    }
+
+    private static void AddOptional(List<string> args, string optionName, string value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            args.Add($"{optionName}={value}");
+        }
     }
 
     private async Task RunOperationAsync(string operationName, Func<Task> operation)

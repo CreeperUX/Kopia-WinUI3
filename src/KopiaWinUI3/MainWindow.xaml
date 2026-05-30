@@ -91,17 +91,135 @@
                                 <TextBlock Text="目的地" FontSize="20" FontWeight="SemiBold" />
 
                                 <StackPanel Spacing="6">
-                                    <TextBlock Text="仓库目的路径" FontWeight="SemiBold" />
+                                    <TextBlock Text="目的地类型" FontWeight="SemiBold" />
+                                    <ComboBox SelectedIndex="{x:Bind ViewModel.RepositoryProviderIndex, Mode=TwoWay}" HorizontalAlignment="Stretch">
+                                        <ComboBoxItem Content="本地文件夹" />
+                                        <ComboBoxItem Content="S3 / MinIO" />
+                                        <ComboBoxItem Content="SFTP" />
+                                        <ComboBoxItem Content="WebDAV" />
+                                        <ComboBoxItem Content="Backblaze B2" />
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="仓库加密密码" FontWeight="SemiBold" />
+                                    <TextBox
+                                        PlaceholderText="用于创建或连接仓库"
+                                        Text="{x:Bind ViewModel.RepositoryPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+
+                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.FilesystemDestinationVisibility, Mode=OneWay}">
+                                    <TextBlock Text="本地文件夹" FontWeight="SemiBold" />
                                     <TextBox
                                         PlaceholderText="例如 D:\KopiaRepository"
                                         Text="{x:Bind ViewModel.RepositoryPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
 
-                                <StackPanel Spacing="6">
-                                    <TextBlock Text="仓库密码" FontWeight="SemiBold" />
-                                    <TextBox
-                                        PlaceholderText="用于创建或连接仓库"
-                                        Text="{x:Bind ViewModel.RepositoryPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.S3DestinationVisibility, Mode=OneWay}">
+                                    <TextBlock Text="S3 / MinIO" FontWeight="SemiBold" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                        <TextBox
+                                            Header="Bucket"
+                                            PlaceholderText="例如 my-kopia-backups"
+                                            Text="{x:Bind ViewModel.S3Bucket, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Column="1"
+                                            Header="Endpoint"
+                                            PlaceholderText="例如 s3.amazonaws.com 或 http://127.0.0.1:9000"
+                                            Text="{x:Bind ViewModel.S3Endpoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Row="1"
+                                            Header="Region"
+                                            PlaceholderText="例如 us-east-1"
+                                            Text="{x:Bind ViewModel.S3Region, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            Header="Prefix"
+                                            PlaceholderText="例如 kopia/main"
+                                            Text="{x:Bind ViewModel.S3Prefix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Row="2"
+                                            Header="Access Key"
+                                            Text="{x:Bind ViewModel.S3AccessKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            Header="Secret Access Key"
+                                            Text="{x:Bind ViewModel.S3SecretAccessKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    </Grid>
+                                </StackPanel>
+
+                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.SftpDestinationVisibility, Mode=OneWay}">
+                                    <TextBlock Text="SFTP" FontWeight="SemiBold" />
+                                    <Grid ColumnDefinitions="*,140" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                        <TextBox
+                                            Header="主机"
+                                            PlaceholderText="例如 backup.example.com"
+                                            Text="{x:Bind ViewModel.SftpHost, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Column="1"
+                                            Header="端口"
+                                            Text="{x:Bind ViewModel.SftpPort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Row="1"
+                                            Header="用户名"
+                                            Text="{x:Bind ViewModel.SftpUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            Header="密码"
+                                            Text="{x:Bind ViewModel.SftpPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Row="2"
+                                            Grid.ColumnSpan="2"
+                                            Header="仓库路径"
+                                            PlaceholderText="例如 /srv/kopia/repository"
+                                            Text="{x:Bind ViewModel.SftpPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    </Grid>
+                                </StackPanel>
+
+                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.WebDavDestinationVisibility, Mode=OneWay}">
+                                    <TextBlock Text="WebDAV" FontWeight="SemiBold" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="10">
+                                        <TextBox
+                                            Grid.ColumnSpan="2"
+                                            Header="URL"
+                                            PlaceholderText="例如 https://dav.example.com/kopia"
+                                            Text="{x:Bind ViewModel.WebDavUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Row="1"
+                                            Header="用户名"
+                                            Text="{x:Bind ViewModel.WebDavUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            Header="密码"
+                                            Text="{x:Bind ViewModel.WebDavPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    </Grid>
+                                </StackPanel>
+
+                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.B2DestinationVisibility, Mode=OneWay}">
+                                    <TextBlock Text="Backblaze B2" FontWeight="SemiBold" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="10">
+                                        <TextBox
+                                            Header="Bucket"
+                                            Text="{x:Bind ViewModel.B2Bucket, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Column="1"
+                                            Header="Prefix"
+                                            PlaceholderText="例如 kopia/main"
+                                            Text="{x:Bind ViewModel.B2Prefix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Row="1"
+                                            Header="Key ID"
+                                            Text="{x:Bind ViewModel.B2KeyId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            Header="Application Key"
+                                            Text="{x:Bind ViewModel.B2Key, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    </Grid>
                                 </StackPanel>
 
                                 <StackPanel Orientation="Horizontal" Spacing="8">
