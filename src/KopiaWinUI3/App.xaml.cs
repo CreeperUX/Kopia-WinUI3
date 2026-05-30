@@ -51,6 +51,7 @@ public partial class App : Application
         services.AddSingleton<IKopiaCommandService, KopiaCommandService>();
         services.AddSingleton<ILocalPortService, LocalPortService>();
         services.AddSingleton<IKopiaProcessService, KopiaProcessService>();
+        services.AddSingleton<IFolderPickerService, FolderPickerService>();
         services.AddSingleton<MainViewModel>();
 
         return services.BuildServiceProvider();

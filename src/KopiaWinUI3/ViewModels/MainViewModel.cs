@@ -16,6 +16,7 @@ public partial class MainViewModel : ObservableObject
 
     private readonly IKopiaLocator _locator;
     private readonly IKopiaCommandService _commands;
+    private readonly IFolderPickerService _folderPicker;
     private readonly DispatcherQueue _dispatcherQueue;
 
     [ObservableProperty]
@@ -23,6 +24,8 @@ public partial class MainViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(CheckRepositoryCommand))]
     [NotifyCanExecuteChangedFor(nameof(CreateRepositoryCommand))]
     [NotifyCanExecuteChangedFor(nameof(ConnectRepositoryCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PickBackupSourcePathCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PickRepositoryPathCommand))]
     [NotifyCanExecuteChangedFor(nameof(CreateSnapshotCommand))]
     [NotifyCanExecuteChangedFor(nameof(ListSnapshotsCommand))]
     [NotifyCanExecuteChangedFor(nameof(ListPoliciesCommand))]
@@ -146,10 +149,14 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string activeTaskName = "无任务";
 
-    public MainViewModel(IKopiaLocator locator, IKopiaCommandService commands)
+    public MainViewModel(
+        IKopiaLocator locator,
+        IKopiaCommandService commands,
+        IFolderPickerService folderPicker)
     {
         _locator = locator;
         _commands = commands;
+        _folderPicker = folderPicker;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     }
 
@@ -217,6 +224,26 @@ public partial class MainViewModel : ObservableObject
             RepositoryStatus = result.Succeeded ? "已连接仓库" : "连接仓库失败";
             CommandOutput = result.DisplayText;
         });
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRunCommand))]
+    public async Task PickBackupSourcePathAsync()
+    {
+        var path = await _folderPicker.PickFolderAsync();
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            BackupSourcePath = path;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRunCommand))]
+    public async Task PickRepositoryPathAsync()
+    {
+        var path = await _folderPicker.PickFolderAsync();
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            RepositoryPath = path;
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanRunCommand))]

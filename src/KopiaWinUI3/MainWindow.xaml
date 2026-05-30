@@ -63,9 +63,15 @@
 
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="备份源路径" FontWeight="SemiBold" />
-                                    <TextBox
-                                        PlaceholderText="例如 C:\Users\Creep\Documents"
-                                        Text="{x:Bind ViewModel.BackupSourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <TextBox
+                                            PlaceholderText="例如 C:\Users\Creep\Documents"
+                                            Text="{x:Bind ViewModel.BackupSourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <Button
+                                            Grid.Column="1"
+                                            Content="浏览..."
+                                            Command="{x:Bind ViewModel.PickBackupSourcePathCommand}" />
+                                    </Grid>
                                 </StackPanel>
 
                                 <StackPanel Spacing="6">
@@ -110,9 +116,15 @@
 
                                 <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.FilesystemDestinationVisibility, Mode=OneWay}">
                                     <TextBlock Text="本地文件夹" FontWeight="SemiBold" />
-                                    <TextBox
-                                        PlaceholderText="例如 D:\KopiaRepository"
-                                        Text="{x:Bind ViewModel.RepositoryPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <TextBox
+                                            PlaceholderText="例如 D:\KopiaRepository"
+                                            Text="{x:Bind ViewModel.RepositoryPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <Button
+                                            Grid.Column="1"
+                                            Content="浏览..."
+                                            Command="{x:Bind ViewModel.PickRepositoryPathCommand}" />
+                                    </Grid>
                                 </StackPanel>
 
                                 <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.S3DestinationVisibility, Mode=OneWay}">
