@@ -1,0 +1,70 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
+using RcloneWinUI3.Services;
+using RcloneWinUI3.ViewModels;
+
+namespace RcloneWinUI3;
+
+public partial class App : Application
+{
+    private Window? _window;
+
+    public App()
+    {
+        UnhandledException += OnUnhandledException;
+        try
+        {
+            Services = ConfigureServices();
+            InitializeComponent();
+        }
+        catch (Exception ex)
+        {
+            WriteStartupError(ex);
+            throw;
+        }
+    }
+
+    public static IServiceProvider Services { get; private set; } = default!;
+
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        try
+        {
+            _window = new MainWindow
+            {
+                Title = "Rclone WinUI3"
+            };
+            _window.Activate();
+        }
+        catch (Exception ex)
+        {
+            WriteStartupError(ex);
+            throw;
+        }
+    }
+
+    private static IServiceProvider ConfigureServices()
+    {
+        var services = new ServiceCollection();
+
+        services.AddSingleton<IRcloneLocator, RcloneLocator>();
+        services.AddSingleton<IRcloneCommandService, RcloneCommandService>();
+        services.AddSingleton<IFolderPickerService, FolderPickerService>();
+        services.AddSingleton<INotificationDialogService, NotificationDialogService>();
+        services.AddSingleton<MainViewModel>();
+
+        return services.BuildServiceProvider();
+    }
+
+    private static void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        WriteStartupError(e.Exception);
+    }
+
+    private static void WriteStartupError(Exception exception)
+    {
+        var logDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
+        Directory.CreateDirectory(logDirectory);
+        File.WriteAllText(Path.Combine(logDirectory, "startup-error.txt"), exception.ToString());
+    }
+}

@@ -8,7 +8,4 @@ obj/
 *.suo
 *.nupkg
 artifacts/
-third_party/kopia/*.exe
-third_party/kopia/*.zip
-third_party/rclone/*.exe
 third_party/rclone/*.zip
