@@ -603,16 +603,32 @@ public partial class MainViewModel : ObservableObject
             TransferSpeedText = $"{latestSpeedMatch.Groups["value"].Value} {latestSpeedMatch.Groups["unit"].Value}/s";
         }
 
-        var etaMatch = EtaRegex.Match(cleanLine);
-        if (etaMatch.Success)
+        Match? latestEtaMatch = null;
+        foreach (Match match in EtaRegex.Matches(cleanLine))
         {
-            EtaText = NormalizeEta(etaMatch.Groups["eta"].Value);
+            if (match.Success)
+            {
+                latestEtaMatch = match;
+            }
         }
 
-        var percentMatch = PercentRegex.Match(cleanLine);
-        if (percentMatch.Success
+        if (latestEtaMatch is not null)
+        {
+            EtaText = NormalizeEta(latestEtaMatch.Groups["eta"].Value);
+        }
+
+        Match? latestPercentMatch = null;
+        foreach (Match match in PercentRegex.Matches(cleanLine))
+        {
+            if (match.Success)
+            {
+                latestPercentMatch = match;
+            }
+        }
+
+        if (latestPercentMatch is not null
             && double.TryParse(
-                percentMatch.Groups["percent"].Value,
+                latestPercentMatch.Groups["percent"].Value,
                 NumberStyles.Float,
                 CultureInfo.InvariantCulture,
                 out var percent))
