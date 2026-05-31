@@ -10,7 +10,7 @@ internal static class Program
     private const string AppName = "Rclone WinUI3";
     private const string AppId = "RcloneWinUI3";
     private const string ExeName = "RcloneWinUI3.exe";
-    private const string Version = "1.0.1";
+    private const string Version = "1.0.2";
     private const string Publisher = "CreeperUX";
 
     [STAThread]

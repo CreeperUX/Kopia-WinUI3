@@ -5,7 +5,7 @@ param(
     [ValidateSet("win-x64", "win-x86", "win-arm64")]
     [string]$Runtime = "win-x64",
 
-    [string]$Version = "1.0.1",
+    [string]$Version = "1.0.2",
     [string]$Publisher = "CreeperUX"
 )
 

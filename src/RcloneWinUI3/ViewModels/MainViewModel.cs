@@ -23,7 +23,11 @@ public partial class MainViewModel : ObservableObject
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex EtaRegex = new(
-        @"\bETA\s+(?<eta>[^,\r\n]+)",
+        @"\bETA\s*:?\s*(?<eta>-{1,2}|(?:[-+]?\d+(?:\.\d+)?\s*)?[0-9a-zA-Z:.]+(?:\s+[0-9a-zA-Z:.]+)*)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex NoticePrefixRegex = new(
+        @"^\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2}\s+NOTICE:\s*",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex AnsiRegex = new(
@@ -571,10 +575,11 @@ public partial class MainViewModel : ObservableObject
         Enqueue(() =>
         {
             var cleanLine = SanitizeOutputLine(line);
+            var metricsLine = NormalizeMetricsLine(cleanLine);
             AppendOutput(cleanLine);
-            UpdateTransferMetrics(cleanLine);
+            UpdateTransferMetrics(metricsLine);
 
-            var status = ExtractStatus(cleanLine);
+            var status = ExtractStatus(metricsLine);
             if (!string.IsNullOrWhiteSpace(status))
             {
                 TaskProgressText = status;
@@ -653,7 +658,7 @@ public partial class MainViewModel : ObservableObject
     private static string NormalizeEta(string value)
     {
         var eta = value.Trim().TrimEnd('.');
-        return eta.StartsWith("-", StringComparison.Ordinal) ? "--" : eta;
+        return eta.StartsWith("-", StringComparison.Ordinal) ? "--" : eta.TrimEnd(',', ';', ')', ']');
     }
 
     private static string SanitizeOutputLine(string line)
@@ -665,6 +670,11 @@ public partial class MainViewModel : ObservableObject
             .Where(static ch => !char.IsControl(ch) || ch == '\t')
             .ToArray())
             .Trim();
+    }
+
+    private static string NormalizeMetricsLine(string line)
+    {
+        return NoticePrefixRegex.Replace(line, string.Empty).Trim();
     }
 
     private void AppendOutput(string message)
