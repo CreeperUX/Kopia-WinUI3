@@ -7,9 +7,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>RcloneWinUI3-Setup-win-x64</AssemblyName>
     <ApplicationIcon>..\..\src\RcloneWinUI3\Assets\AppIcon.ico</ApplicationIcon>
-    <Version>1.0.0</Version>
-    <FileVersion>1.0.0</FileVersion>
-    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.0.1</Version>
+    <FileVersion>1.0.1</FileVersion>
+    <AssemblyVersion>1.0.1</AssemblyVersion>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>

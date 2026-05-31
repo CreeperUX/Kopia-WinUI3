@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,7 +15,7 @@ namespace RcloneWinUI3.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     private static readonly Regex SpeedRegex = new(
-        @"(?<value>\d+(?:\.\d+)?)\s*(?<unit>(?:[KMGTPE]?i?B|[KMGTPE]?B|B))/s",
+        @"(?<value>\d+(?:\.\d+)?)\s*(?<unit>(?:[KMGTPE]?i?B(?:yte)?s?|[KMGTPE]?B(?:yte)?s?|B(?:yte)?s?))/s",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex PercentRegex = new(
@@ -288,6 +289,7 @@ public partial class MainViewModel : ObservableObject
             "--progress",
             "--stats=1s",
             "--stats-one-line",
+            "--stats-log-level=NOTICE",
             "--create-empty-src-dirs",
             $"--transfers={GetSelectedValue(TransferOptions, TransfersIndex, "并行传输数")}",
             $"--checkers={GetSelectedValue(CheckerOptions, CheckersIndex, "并行检查数")}",
@@ -325,6 +327,7 @@ public partial class MainViewModel : ObservableObject
             "--progress",
             "--stats=1s",
             "--stats-one-line",
+            "--stats-log-level=NOTICE",
             $"--checkers={GetSelectedValue(CheckerOptions, CheckersIndex, "并行检查数")}"
         };
 
@@ -602,7 +605,12 @@ public partial class MainViewModel : ObservableObject
         }
 
         var percentMatch = PercentRegex.Match(cleanLine);
-        if (percentMatch.Success && double.TryParse(percentMatch.Groups["percent"].Value, out var percent))
+        if (percentMatch.Success
+            && double.TryParse(
+                percentMatch.Groups["percent"].Value,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var percent))
         {
             IsProgressIndeterminate = false;
             ProgressValue = Math.Clamp(percent, 0, 100);

@@ -89,6 +89,7 @@ public sealed class RcloneCommandService : IRcloneCommandService
     {
         var buffer = new char[4096];
         var line = new StringBuilder();
+        string? lastPublishedPartial = null;
 
         while (true)
         {
@@ -103,22 +104,45 @@ public sealed class RcloneCommandService : IRcloneCommandService
                 var character = buffer[index];
                 if (character is '\r' or '\n')
                 {
-                    FlushLine(line, lines, linesLock, outputReceived);
+                    FlushLine(line, lines, linesLock, outputReceived, ref lastPublishedPartial);
                     continue;
                 }
 
                 line.Append(character);
             }
+
+            PublishPartialLine(line, outputReceived, ref lastPublishedPartial);
         }
 
-        FlushLine(line, lines, linesLock, outputReceived);
+        FlushLine(line, lines, linesLock, outputReceived, ref lastPublishedPartial);
+    }
+
+    private static void PublishPartialLine(
+        StringBuilder line,
+        Action<string> outputReceived,
+        ref string? lastPublishedPartial)
+    {
+        if (line.Length == 0)
+        {
+            return;
+        }
+
+        var value = line.ToString();
+        if (string.Equals(value, lastPublishedPartial, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        lastPublishedPartial = value;
+        outputReceived(value);
     }
 
     private static void FlushLine(
         StringBuilder line,
         List<string> lines,
         object linesLock,
-        Action<string> outputReceived)
+        Action<string> outputReceived,
+        ref string? lastPublishedPartial)
     {
         if (line.Length == 0)
         {
@@ -133,6 +157,11 @@ public sealed class RcloneCommandService : IRcloneCommandService
             lines.Add(value);
         }
 
-        outputReceived(value);
+        if (!string.Equals(value, lastPublishedPartial, StringComparison.Ordinal))
+        {
+            outputReceived(value);
+        }
+
+        lastPublishedPartial = null;
     }
 }

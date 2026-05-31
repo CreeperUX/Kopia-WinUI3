@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Security.Principal;
 using Microsoft.Win32;
 
 namespace RcloneWinUI3.Setup;
@@ -9,7 +10,7 @@ internal static class Program
     private const string AppName = "Rclone WinUI3";
     private const string AppId = "RcloneWinUI3";
     private const string ExeName = "RcloneWinUI3.exe";
-    private const string Version = "1.0.0";
+    private const string Version = "1.0.1";
     private const string Publisher = "CreeperUX";
 
     [STAThread]
@@ -20,6 +21,19 @@ internal static class Program
         var options = InstallOptions.Parse(args);
         try
         {
+            if (!IsAdministrator())
+            {
+                const string message = "安装到 Program Files 需要管理员权限。请以管理员身份重新运行安装器。";
+                if (options.Quiet)
+                {
+                    Console.Error.WriteLine(message);
+                    return 1;
+                }
+
+                MessageBox.Show(message, $"{AppName} Setup", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return 1;
+            }
+
             if (options.Quiet)
             {
                 InstallerCore.Install(options, static (_, _) => { });
@@ -40,6 +54,13 @@ internal static class Program
             MessageBox.Show(ex.Message, $"{AppName} Setup", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return 1;
         }
+    }
+
+    private static bool IsAdministrator()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        var principal = new WindowsPrincipal(identity);
+        return principal.IsInRole(WindowsBuiltInRole.Administrator);
     }
 
     private sealed class InstallerForm : Form
@@ -63,7 +84,7 @@ internal static class Program
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
-            ClientSize = new Size(700, 440);
+            ClientSize = new Size(760, 480);
             Icon = TryLoadIcon();
 
             BuildWelcomePanel();
@@ -89,42 +110,42 @@ internal static class Program
             _welcomePanel.Dock = DockStyle.Fill;
             Controls.Add(_welcomePanel);
 
-            var title = NewLabel("安装 Rclone WinUI3", 30, 26, 620, 36, 17, FontStyle.Bold);
+            var title = NewLabel("安装 Rclone WinUI3", 32, 28, 680, 56, 18, FontStyle.Bold);
             _welcomePanel.Controls.Add(title);
 
-            var description = NewLabel("安装器会将应用和内置 rclone 安装到当前用户目录，并注册到 Windows 应用卸载列表。", 32, 78, 620, 48);
+            var description = NewLabel("安装器会将应用和内置 rclone 安装到 Program Files，并注册到 Windows 应用卸载列表。此安装需要管理员权限。", 34, 92, 680, 58);
             _welcomePanel.Controls.Add(description);
 
-            var pathLabel = NewLabel("安装位置：", 32, 140, 620, 24, 10, FontStyle.Bold);
+            var pathLabel = NewLabel("安装位置：", 34, 166, 680, 28, 10, FontStyle.Bold);
             _welcomePanel.Controls.Add(pathLabel);
 
             var pathBox = new TextBox
             {
                 Text = InstallerCore.InstallDir,
-                Location = new Point(32, 168),
-                Size = new Size(620, 28),
+                Location = new Point(34, 198),
+                Size = new Size(680, 30),
                 ReadOnly = true,
                 BorderStyle = BorderStyle.FixedSingle
             };
             _welcomePanel.Controls.Add(pathBox);
 
-            _startMenuCheck.Text = "添加到开始菜单";
+            _startMenuCheck.Text = "为所有用户添加到开始菜单";
             _startMenuCheck.Checked = true;
             _startMenuCheck.AutoSize = true;
-            _startMenuCheck.Location = new Point(34, 222);
+            _startMenuCheck.Location = new Point(36, 258);
             _welcomePanel.Controls.Add(_startMenuCheck);
 
-            _desktopCheck.Text = "创建桌面快捷方式";
+            _desktopCheck.Text = "为所有用户创建桌面快捷方式";
             _desktopCheck.Checked = false;
             _desktopCheck.AutoSize = true;
-            _desktopCheck.Location = new Point(34, 256);
+            _desktopCheck.Location = new Point(36, 294);
             _welcomePanel.Controls.Add(_desktopCheck);
 
-            var cancelButton = NewButton("取消", 474, 374);
+            var cancelButton = NewButton("取消", 536, 414);
             cancelButton.Click += (_, _) => Close();
             _welcomePanel.Controls.Add(cancelButton);
 
-            var installButton = NewButton("安装", 576, 374);
+            var installButton = NewButton("安装", 638, 414);
             installButton.Click += async (_, _) => await InstallAsync();
             _welcomePanel.Controls.Add(installButton);
         }
@@ -135,17 +156,17 @@ internal static class Program
             _progressPanel.Visible = false;
             Controls.Add(_progressPanel);
 
-            _progressPanel.Controls.Add(NewLabel("正在安装", 30, 26, 620, 36, 17, FontStyle.Bold));
+            _progressPanel.Controls.Add(NewLabel("正在安装", 32, 28, 680, 56, 18, FontStyle.Bold));
 
             _statusLabel.Text = "准备开始...";
-            _statusLabel.Location = new Point(32, 102);
-            _statusLabel.Size = new Size(620, 48);
+            _statusLabel.Location = new Point(34, 116);
+            _statusLabel.Size = new Size(680, 64);
             _progressPanel.Controls.Add(_statusLabel);
 
             _progressBar.Minimum = 0;
             _progressBar.Maximum = 100;
-            _progressBar.Location = new Point(32, 166);
-            _progressBar.Size = new Size(620, 24);
+            _progressBar.Location = new Point(34, 196);
+            _progressBar.Size = new Size(680, 26);
             _progressPanel.Controls.Add(_progressBar);
         }
 
@@ -155,16 +176,16 @@ internal static class Program
             _finishPanel.Visible = false;
             Controls.Add(_finishPanel);
 
-            _finishTitle.Location = new Point(30, 26);
-            _finishTitle.Size = new Size(620, 36);
-            _finishTitle.Font = new Font("Segoe UI", 17, FontStyle.Bold);
+            _finishTitle.Location = new Point(32, 28);
+            _finishTitle.Size = new Size(680, 56);
+            _finishTitle.Font = new Font("Segoe UI", 18, FontStyle.Bold);
             _finishPanel.Controls.Add(_finishTitle);
 
-            _finishMessage.Location = new Point(32, 92);
-            _finishMessage.Size = new Size(620, 160);
+            _finishMessage.Location = new Point(34, 110);
+            _finishMessage.Size = new Size(680, 190);
             _finishPanel.Controls.Add(_finishMessage);
 
-            var finishButton = NewButton("完成", 576, 374);
+            var finishButton = NewButton("完成", 638, 414);
             finishButton.Click += (_, _) => Close();
             _finishPanel.Controls.Add(finishButton);
         }
@@ -224,7 +245,9 @@ internal static class Program
                 Text = text,
                 Location = new Point(x, y),
                 Size = new Size(width, height),
-                Font = new Font("Segoe UI", fontSize, style)
+                Font = new Font("Segoe UI", fontSize, style),
+                AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleLeft
             };
         }
 
@@ -242,16 +265,19 @@ internal static class Program
     private static class InstallerCore
     {
         private static readonly string InstallRoot = Path.GetFullPath(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)));
+        private static readonly string LegacyInstallRoot = Path.GetFullPath(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Programs"));
 
         public static readonly string InstallDir = Path.GetFullPath(Path.Combine(InstallRoot, AppName));
+        private static readonly string LegacyInstallDir = Path.GetFullPath(Path.Combine(LegacyInstallRoot, AppName));
 
         public static void Install(InstallOptions options, Action<int, string> progress)
         {
             if (!InstallDir.StartsWith(InstallRoot, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("Install path escaped the expected user Programs directory.");
+                throw new InvalidOperationException("Install path escaped the expected Program Files directory.");
             }
 
             progress(5, "读取安装包");
@@ -261,7 +287,10 @@ internal static class Program
             progress(12, "关闭正在运行的应用");
             StopRunningApplication();
 
-            progress(22, "准备安装目录");
+            progress(18, "清理旧版用户级安装");
+            RemoveLegacyPerUserInstall();
+
+            progress(24, "准备安装目录");
             if (Directory.Exists(InstallDir))
             {
                 Directory.Delete(InstallDir, true);
@@ -287,14 +316,10 @@ internal static class Program
 
             progress(84, "创建快捷方式");
             var startMenuShortcut = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "Microsoft",
-                "Windows",
-                "Start Menu",
-                "Programs",
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms),
                 $"{AppName}.lnk");
             var desktopShortcut = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory),
                 $"{AppName}.lnk");
 
             if (options.CreateStartMenuShortcut)
@@ -346,6 +371,33 @@ internal static class Program
             }
         }
 
+        private static void RemoveLegacyPerUserInstall()
+        {
+            if (!LegacyInstallDir.StartsWith(LegacyInstallRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Legacy install path escaped the expected user Programs directory.");
+            }
+
+            File.Delete(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Microsoft",
+                "Windows",
+                "Start Menu",
+                "Programs",
+                $"{AppName}.lnk"));
+            File.Delete(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                $"{AppName}.lnk"));
+
+            Registry.CurrentUser.DeleteSubKeyTree($@"Software\Microsoft\Windows\CurrentVersion\Uninstall\{AppId}", false);
+            Registry.CurrentUser.DeleteSubKeyTree($@"Software\Microsoft\Windows\CurrentVersion\App Paths\{ExeName}", false);
+
+            if (Directory.Exists(LegacyInstallDir))
+            {
+                Directory.Delete(LegacyInstallDir, true);
+            }
+        }
+
         private static void StopRunningApplication()
         {
             foreach (var process in Process.GetProcessesByName("RcloneWinUI3"))
@@ -386,7 +438,7 @@ internal static class Program
 
         private static void RegisterUninstallEntry(string exePath, string iconPath, string uninstallPath)
         {
-            using var key = Registry.CurrentUser.CreateSubKey($@"Software\Microsoft\Windows\CurrentVersion\Uninstall\{AppId}", true)
+            using var key = Registry.LocalMachine.CreateSubKey($@"Software\Microsoft\Windows\CurrentVersion\Uninstall\{AppId}", true)
                 ?? throw new InvalidOperationException("Unable to create uninstall registry key.");
 
             key.SetValue("DisplayName", AppName);
@@ -404,7 +456,7 @@ internal static class Program
 
         private static void RegisterAppPath(string exePath)
         {
-            using var key = Registry.CurrentUser.CreateSubKey($@"Software\Microsoft\Windows\CurrentVersion\App Paths\{ExeName}", true)
+            using var key = Registry.LocalMachine.CreateSubKey($@"Software\Microsoft\Windows\CurrentVersion\App Paths\{ExeName}", true)
                 ?? throw new InvalidOperationException("Unable to create App Paths registry key.");
             key.SetValue("", exePath);
             key.SetValue("Path", InstallDir);
@@ -420,10 +472,22 @@ internal static class Program
             $appName = "Rclone WinUI3"
             $appId = "RcloneWinUI3"
             $installDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-            $startMenuShortcut = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Rclone WinUI3.lnk"
-            $desktopShortcut = Join-Path ([Environment]::GetFolderPath("Desktop")) "Rclone WinUI3.lnk"
-            $uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\$appId"
-            $appPathKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths\RcloneWinUI3.exe"
+            $startMenuShortcut = Join-Path ([Environment]::GetFolderPath("CommonPrograms")) "Rclone WinUI3.lnk"
+            $desktopShortcut = Join-Path ([Environment]::GetFolderPath("CommonDesktopDirectory")) "Rclone WinUI3.lnk"
+            $uninstallKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\$appId"
+            $appPathKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\App Paths\RcloneWinUI3.exe"
+
+            $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+            $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+            if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+                $quotedPath = '"' + $MyInvocation.MyCommand.Path + '"'
+                $arguments = "-NoProfile -ExecutionPolicy Bypass -File $quotedPath"
+                if ($Silent) {
+                    $arguments += " -Silent"
+                }
+                Start-Process -FilePath "powershell.exe" -ArgumentList $arguments -Verb RunAs -WindowStyle Hidden
+                exit
+            }
 
             Get-Process -Name "RcloneWinUI3" -ErrorAction SilentlyContinue | Stop-Process -Force
             Remove-Item -LiteralPath $startMenuShortcut -Force
